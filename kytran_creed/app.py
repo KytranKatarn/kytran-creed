@@ -25,6 +25,12 @@ def create_app(config=None):
     db_path = app.config.get("DB_PATH", Config.DB_PATH)
     init_db(db_path)
 
+    from kytran_creed.pg import init_pg
+    from kytran_creed.routes import register_all_routes
+
+    init_pg()
+    register_all_routes(app)
+
     @app.route("/health")
     def health():
         return jsonify({"status": "ok", "version": __version__})
