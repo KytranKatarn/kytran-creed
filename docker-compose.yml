@@ -1,0 +1,58 @@
+version: "3.8"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: creed_postgres
+    restart: unless-stopped
+    read_only: true
+    mem_limit: 512m
+    cpus: 0.5
+    tmpfs:
+      - /tmp
+      - /run/postgresql
+    environment:
+      POSTGRES_DB: creed
+      POSTGRES_USER: creed
+      POSTGRES_PASSWORD_FILE: /run/secrets/db_password
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data
+    secrets:
+      - db_password
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U creed -d creed"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  creed:
+    build: .
+    container_name: kytran_creed
+    restart: unless-stopped
+    mem_limit: 512m
+    cpus: 0.5
+    cap_drop:
+      - ALL
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8086:8086"
+    environment:
+      KCR_SECRET_KEY: ${KCR_SECRET_KEY:-change-me-in-production}
+      KCR_PORT: "8086"
+      KCR_ADMIN_USER: ${KCR_ADMIN_USER:-admin}
+      KCR_ADMIN_PASSWORD: ${KCR_ADMIN_PASSWORD:-}
+      DB_HOST: creed_postgres
+      DB_PORT: "5432"
+      DB_NAME: creed
+      DB_USER: creed
+      DB_PASSWORD_FILE: /run/secrets/db_password
+    volumes:
+      - ./data:/data
+    secrets:
+      - db_password
+
+secrets:
+  db_password:
+    file: ./secrets/db_password.txt

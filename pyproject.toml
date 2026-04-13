@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "kytran-creed"
+version = "0.1.0"
+description = "C.R.E.E.D. — Compliance, Rights & Ethical Enforcement Directive"
+requires-python = ">=3.11"
+dependencies = [
+    "flask>=3.0",
+    "flask-login>=0.6",
+    "gunicorn>=21.2",
+    "bcrypt>=4.0",
+    "psycopg2-binary>=2.9",
+    "requests>=2.31",
+]
+
+[tool.setuptools.packages.find]
+include = ["kytran_creed*"]
+
+[project.scripts]
+kytran-creed = "kytran_creed.app:main"
