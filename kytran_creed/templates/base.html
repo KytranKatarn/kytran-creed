@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}C.R.E.E.D.{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Antonio:wght@400;600;700&family=Orbitron:wght@400;600;700;900&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/creed.css') }}">
+  {% block head %}{% endblock %}
+</head>
+<body>
+  <div class="lcars-layout">
+    <!-- Sidebar -->
+    <aside class="lcars-sidebar">
+      <div class="lcars-elbow-top"></div>
+      <div class="lcars-sidebar-brand">
+        <span class="brand-acronym">C.R.E.E.D.</span>
+        <span class="brand-sub">Governance Institute</span>
+      </div>
+      <nav class="lcars-nav">
+        <a href="/" class="lcars-nav-item {% if request.path == '/' %}active{% endif %}">
+          <span class="nav-icon">&#9632;</span> Dashboard
+        </a>
+        <a href="/api/v1/docs" class="lcars-nav-item" target="_blank">
+          <span class="nav-icon">&#9650;</span> API Docs
+        </a>
+      </nav>
+      <div class="lcars-sidebar-spacer"></div>
+      <div class="lcars-elbow-bottom"></div>
+    </aside>
+
+    <!-- Main area -->
+    <div class="lcars-main">
+      <!-- Header bar -->
+      <header class="lcars-header">
+        <div class="lcars-header-title">
+          {% block header_title %}C.R.E.E.D. Governance Dashboard{% endblock %}
+        </div>
+        <div class="lcars-header-actions">
+          {% if current_user is defined and current_user.is_authenticated %}
+            <span class="header-user">{{ current_user.display_name }}</span>
+            <a href="/logout" class="btn-lcars btn-lcars-sm btn-lcars-danger">Logout</a>
+          {% endif %}
+        </div>
+      </header>
+
+      <!-- Flash messages -->
+      <div class="flash-container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <div class="flash flash-{{ category }}">{{ message }}</div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+      </div>
+
+      <!-- Content -->
+      <main class="lcars-content">
+        {% block content %}{% endblock %}
+      </main>
+    </div>
+  </div>
+
+  <footer class="lcars-footer">
+    <span>C.R.E.E.D. v0.1.0</span>
+    <span class="footer-sep">|</span>
+    <span>Compliance, Rights &amp; Ethical Enforcement Directive</span>
+  </footer>
+
+  {% block scripts %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — C.R.E.E.D.{% endblock %}
+{% block header_title %}Governance Dashboard{% endblock %}
+
+{% block content %}
+<!-- Hero Stats -->
+<section class="hero-stats">
+  <div class="stat-card stat-card-primary">
+    <div class="stat-value" id="overall-score">--</div>
+    <div class="stat-grade" id="overall-grade">--</div>
+    <div class="stat-label">Overall Score</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-value" id="total-events">--</div>
+    <div class="stat-label">Total Events</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-value" id="active-categories">--</div>
+    <div class="stat-label">Active Categories</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-value" id="event-rate">--</div>
+    <div class="stat-label">Events / Day</div>
+  </div>
+</section>
+
+<!-- Category Scores -->
+<section class="section-block">
+  <h2 class="section-title">Category Scores</h2>
+  <div class="category-grid" id="category-grid">
+    <!-- populated by JS -->
+  </div>
+</section>
+
+<!-- Recent Events -->
+<section class="section-block">
+  <div class="section-title-row">
+    <h2 class="section-title">Recent Events</h2>
+    <span class="refresh-indicator" id="refresh-indicator">Auto-refresh in <span id="refresh-countdown">30</span>s</span>
+  </div>
+  <div class="table-wrapper">
+    <table class="events-table">
+      <thead>
+        <tr>
+          <th>Time</th>
+          <th>Type</th>
+          <th>Agent</th>
+          <th>Category</th>
+          <th>Severity</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody id="events-tbody">
+        <tr><td colspan="6" class="table-empty">Loading events...</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/creed.js') }}"></script>
+{% endblock %}
