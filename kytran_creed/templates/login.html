@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Login — C.R.E.E.D.{% endblock %}
+{% block header_title %}Access Control{% endblock %}
+
+{% block content %}
+<div class="auth-centered">
+  <div class="auth-card">
+    <h1 class="auth-title">C.R.E.E.D.</h1>
+    <p class="auth-subtitle">Compliance, Rights &amp; Ethical Enforcement Directive</p>
+
+    <form method="POST" action="/login" class="auth-form">
+      <div class="form-group">
+        <label for="username">Username</label>
+        <input type="text" id="username" name="username" class="form-control" autocomplete="username" required>
+      </div>
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" class="form-control" autocomplete="current-password" required>
+      </div>
+      <button type="submit" class="btn-lcars btn-lcars-full">Sign In</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

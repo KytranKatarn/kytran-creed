@@ -27,9 +27,28 @@ def create_app(config=None):
 
     from kytran_creed.pg import init_pg
     from kytran_creed.routes import register_all_routes
+    from kytran_creed.auth import register_auth_routes, setup_required, create_admin
 
     init_pg()
     register_all_routes(app)
+    register_auth_routes(app)
+
+    # Auto-seed admin from env
+    admin_user = app.config.get("ADMIN_USER") or Config.ADMIN_USER
+    admin_pass = app.config.get("ADMIN_PASSWORD") or Config.ADMIN_PASSWORD
+    if admin_pass and setup_required():
+        create_admin(admin_user, admin_pass)
+
+    @app.before_request
+    def check_setup():
+        from flask import request, redirect
+        # Skip auth/setup/API/badge/health endpoints
+        if request.endpoint in ("setup", "static", "health", "login", "logout"):
+            return
+        if request.path.startswith("/api/") or request.path.startswith("/badge/"):
+            return
+        if setup_required():
+            return redirect("/setup")
 
     @app.route("/health")
     def health():
