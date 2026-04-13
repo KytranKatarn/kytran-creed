@@ -4,7 +4,11 @@
 
 function formatTimestamp(ts) {
   if (!ts) return "\u2014";
-  var date = new Date(ts.endsWith("Z") ? ts : ts + "Z");
+  // Normalize SQLite format "YYYY-MM-DD HH:MM:SS" to ISO "YYYY-MM-DDTHH:MM:SSZ"
+  var normalized = ts.replace(" ", "T");
+  if (!normalized.endsWith("Z") && !normalized.includes("+")) normalized += "Z";
+  var date = new Date(normalized);
+  if (isNaN(date.getTime())) return ts;
   var now = new Date();
   var diffMs = now - date;
   var diffSec = Math.floor(diffMs / 1000);
@@ -95,25 +99,24 @@ async function fetchScores() {
 
     var overallEl = document.getElementById("overall-score");
     var gradeEl = document.getElementById("overall-grade");
-    if (overallEl && data.overall_score != null) {
-      overallEl.textContent = data.overall_score.toFixed(1);
+    if (overallEl && data.overall != null) {
+      overallEl.textContent = data.overall.toFixed(1);
     }
     if (gradeEl && data.grade) {
       gradeEl.textContent = data.grade;
     }
 
+    var cats = data.by_category || {};
     var catEl = document.getElementById("active-categories");
-    if (catEl && data.categories) {
-      catEl.textContent = Object.keys(data.categories).length;
+    if (catEl) {
+      catEl.textContent = Object.keys(cats).length;
     }
 
-    if (data.categories) {
-      var grid = document.getElementById("category-grid");
-      if (grid) grid.textContent = "";
-      for (var name in data.categories) {
-        var info = data.categories[name];
-        var score = typeof info === "object" ? info.score : info;
-        renderCategoryCard(name, score);
+    var grid = document.getElementById("category-grid");
+    if (grid) {
+      grid.textContent = "";
+      for (var name in cats) {
+        renderCategoryCard(name, cats[name]);
       }
     }
   } catch (e) {
