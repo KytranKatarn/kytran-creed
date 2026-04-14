@@ -370,6 +370,7 @@ a:hover { color: var(--creed-accent); }
   border-radius: 8px;
   padding: 16px;
   transition: border-color 0.2s;
+  text-align: center;
 }
 
 .category-card:hover { border-color: var(--creed-accent); }
