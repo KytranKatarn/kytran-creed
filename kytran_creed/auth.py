@@ -136,6 +136,43 @@ def register_auth_routes(app):
         logout_user()
         return redirect("/login")
 
+    @app.route("/settings", methods=["GET", "POST"])
+    @login_required
+    def settings():
+        if request.method == "POST":
+            current_password = request.form.get("current_password", "")
+            new_password = request.form.get("new_password", "")
+            confirm_password = request.form.get("confirm_password", "")
+
+            if not current_password or not new_password:
+                flash("All fields are required", "error")
+            elif new_password != confirm_password:
+                flash("New passwords do not match", "error")
+            else:
+                db = get_db()
+                try:
+                    row = db.execute(
+                        "SELECT password_hash FROM users WHERE id = ?",
+                        (current_user.id,),
+                    ).fetchone()
+                    if not row or not bcrypt.checkpw(
+                        current_password.encode(), row["password_hash"].encode()
+                    ):
+                        flash("Current password is incorrect", "error")
+                    else:
+                        new_hash = bcrypt.hashpw(
+                            new_password.encode(), bcrypt.gensalt()
+                        ).decode()
+                        db.execute(
+                            "UPDATE users SET password_hash = ? WHERE id = ?",
+                            (new_hash, current_user.id),
+                        )
+                        db.commit()
+                        flash("Password changed successfully", "success")
+                finally:
+                    db.close()
+        return render_template("settings.html")
+
     @app.route("/setup", methods=["GET", "POST"])
     def setup():
         if not setup_required():

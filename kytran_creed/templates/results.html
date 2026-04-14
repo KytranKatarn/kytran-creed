@@ -1,0 +1,258 @@
+{% extends "base.html" %}
+{% block title %}Compliance Results — C.R.E.E.D.{% endblock %}
+{% block header_title %}Public Compliance Results{% endblock %}
+
+{% block head %}
+<style>
+  /* Hide sidebar on public results page */
+  .lcars-sidebar { display: none !important; }
+  .lcars-layout { display: block; }
+  .lcars-content { max-width: 960px; margin: 0 auto; }
+
+  .results-hero {
+    text-align: center;
+    padding: 40px 20px 30px;
+  }
+  .results-hero-grade {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 72px;
+    font-weight: 900;
+    color: var(--creed-teal);
+    line-height: 1;
+    text-shadow: 0 0 30px rgba(0,229,255,0.3);
+  }
+  .results-hero-score {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 20px;
+    color: var(--creed-accent);
+    margin-top: 8px;
+  }
+  .results-hero-events {
+    font-size: 13px;
+    color: var(--creed-text-dim);
+    margin-top: 6px;
+  }
+  .results-hero-label {
+    font-family: 'Antonio', sans-serif;
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--creed-text-dim);
+    margin-top: 14px;
+  }
+
+  .embed-section {
+    background: var(--creed-panel);
+    border: 1px solid var(--creed-border);
+    border-radius: 8px;
+    padding: 20px;
+    margin-top: 32px;
+  }
+  .embed-section h3 {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 12px;
+    color: var(--creed-accent);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 14px;
+  }
+  .embed-preview {
+    text-align: center;
+    margin-bottom: 16px;
+  }
+  .embed-code-block {
+    position: relative;
+    margin-bottom: 12px;
+  }
+  .embed-label {
+    font-family: 'Antonio', sans-serif;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--creed-text-dim);
+    margin-bottom: 4px;
+  }
+  .embed-code-block pre {
+    background: #08081a;
+    border: 1px solid var(--creed-border);
+    border-radius: 6px;
+    padding: 12px;
+    font-size: 12px;
+    color: var(--creed-teal);
+    overflow-x: auto;
+    cursor: pointer;
+    transition: border-color 0.2s;
+  }
+  .embed-code-block pre:hover {
+    border-color: var(--creed-accent);
+  }
+  .embed-copied {
+    position: absolute;
+    top: 50%;
+    right: 12px;
+    transform: translateY(-50%);
+    font-size: 11px;
+    color: var(--creed-success);
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  .embed-copied.show { opacity: 1; }
+
+  .results-footer {
+    text-align: center;
+    padding: 30px 0 10px;
+    font-size: 12px;
+    color: var(--creed-text-dim);
+  }
+  .results-footer a {
+    color: var(--creed-accent);
+    font-weight: 600;
+  }
+
+  .results-updated {
+    text-align: center;
+    font-size: 11px;
+    color: var(--creed-text-dim);
+    margin-top: 8px;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Hero -->
+<div class="results-hero">
+  <div class="results-hero-grade" id="resultsGrade">--</div>
+  <div class="results-hero-score" id="resultsScore">Loading...</div>
+  <div class="results-hero-events" id="resultsEvents"></div>
+  <div class="results-hero-label">Overall Compliance Grade</div>
+</div>
+
+<!-- Category Breakdown -->
+<div class="section-block">
+  <h2 class="section-title">Category Breakdown</h2>
+  <div class="category-grid" id="resultsCategoryGrid">
+    <div style="text-align:center; color:var(--creed-text-dim); grid-column:1/-1; padding:20px;">
+      Loading scores...
+    </div>
+  </div>
+  <div class="results-updated" id="resultsUpdated"></div>
+</div>
+
+<!-- Badge Embed -->
+<div class="section-block embed-section">
+  <h3>Embed Compliance Badge</h3>
+  <div class="embed-preview">
+    <img src="/api/v1/badge/overall" alt="C.R.E.E.D. Compliance Badge" style="height:28px;">
+  </div>
+  <div class="embed-code-block">
+    <div class="embed-label">HTML</div>
+    <pre onclick="copyEmbed(this)"><code>&lt;img src="https://creed.kytranempowerment.com/api/v1/badge/overall" alt="C.R.E.E.D. Compliance"&gt;</code></pre>
+    <span class="embed-copied">Copied!</span>
+  </div>
+  <div class="embed-code-block">
+    <div class="embed-label">Markdown</div>
+    <pre onclick="copyEmbed(this)"><code>![C.R.E.E.D. Compliance](https://creed.kytranempowerment.com/api/v1/badge/overall)</code></pre>
+    <span class="embed-copied">Copied!</span>
+  </div>
+</div>
+
+<!-- Footer -->
+<div class="results-footer">
+  Powered by <a href="https://creed-ai.org" target="_blank">C.R.E.E.D.</a> &mdash;
+  Compliance, Rights &amp; Ethical Enforcement Directive
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function scoreClass(score) {
+  if (score >= 80) return 'score-high';
+  if (score >= 60) return 'score-mid';
+  return 'score-low';
+}
+
+function escapeText(str) {
+  var d = document.createElement('div');
+  d.textContent = str;
+  return d.textContent;
+}
+
+function buildCategoryCard(key, cat) {
+  var card = document.createElement('div');
+  card.className = 'category-card';
+
+  var nameEl = document.createElement('div');
+  nameEl.className = 'category-name';
+  nameEl.textContent = key.replace(/_/g, ' ');
+  card.appendChild(nameEl);
+
+  var scoreEl = document.createElement('div');
+  scoreEl.className = 'category-score-num';
+  scoreEl.textContent = (cat.score != null ? cat.score.toFixed(1) : '--');
+  card.appendChild(scoreEl);
+
+  var gradeEl = document.createElement('div');
+  gradeEl.className = 'category-grade';
+  gradeEl.textContent = (cat.grade || '--') + ' \u00B7 ' + (cat.events || 0) + ' events';
+  card.appendChild(gradeEl);
+
+  var barOuter = document.createElement('div');
+  barOuter.className = 'score-bar';
+  var barFill = document.createElement('div');
+  barFill.className = 'score-bar-fill ' + scoreClass(cat.score || 0);
+  barFill.style.width = (cat.score || 0) + '%';
+  barOuter.appendChild(barFill);
+  card.appendChild(barOuter);
+
+  return card;
+}
+
+function loadResults() {
+  fetch('/api/v1/scores')
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      document.getElementById('resultsGrade').textContent = data.grade || '--';
+      document.getElementById('resultsScore').textContent =
+        (data.overall_score != null ? data.overall_score.toFixed(1) + ' / 100' : '--');
+      document.getElementById('resultsEvents').textContent =
+        (data.total_events != null ? data.total_events + ' events analyzed' : '');
+
+      var grid = document.getElementById('resultsCategoryGrid');
+      while (grid.firstChild) { grid.removeChild(grid.firstChild); }
+
+      var cats = data.categories || {};
+      var keys = Object.keys(cats);
+      if (keys.length === 0) {
+        var empty = document.createElement('div');
+        empty.style.cssText = 'text-align:center;color:var(--creed-text-dim);grid-column:1/-1;padding:20px;';
+        empty.textContent = 'No category data available';
+        grid.appendChild(empty);
+        return;
+      }
+
+      keys.forEach(function(key) {
+        grid.appendChild(buildCategoryCard(key, cats[key]));
+      });
+
+      document.getElementById('resultsUpdated').textContent =
+        'Last updated: ' + new Date().toLocaleString();
+    })
+    .catch(function() {
+      document.getElementById('resultsGrade').textContent = '--';
+      document.getElementById('resultsScore').textContent = 'Unable to load scores';
+    });
+}
+
+function copyEmbed(pre) {
+  var text = pre.querySelector('code').textContent;
+  navigator.clipboard.writeText(text).then(function() {
+    var badge = pre.parentElement.querySelector('.embed-copied');
+    badge.classList.add('show');
+    setTimeout(function() { badge.classList.remove('show'); }, 1500);
+  });
+}
+
+loadResults();
+setInterval(loadResults, 60000);
+</script>
+{% endblock %}

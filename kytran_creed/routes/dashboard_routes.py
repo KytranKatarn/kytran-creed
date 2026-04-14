@@ -8,3 +8,8 @@ dashboard_bp = Blueprint("dashboard", __name__)
 @login_required
 def index():
     return render_template("dashboard.html")
+
+
+@dashboard_bp.route("/results")
+def public_results():
+    return render_template("results.html")

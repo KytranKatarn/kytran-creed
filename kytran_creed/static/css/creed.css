@@ -196,6 +196,9 @@ a:hover { color: var(--creed-accent); }
   flex: 1;
   padding: 24px;
   overflow-y: auto;
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
 }
 
 /* ── Footer ─────────────────────────────────── */
@@ -259,6 +262,7 @@ a:hover { color: var(--creed-accent); }
   gap: 16px;
   margin-bottom: 28px;
   flex-wrap: wrap;
+  justify-content: center;
 }
 
 .stat-card {
@@ -340,6 +344,7 @@ a:hover { color: var(--creed-accent); }
   text-transform: uppercase;
   letter-spacing: 2px;
   margin-bottom: 14px;
+  text-align: center;
 }
 
 .section-title-row .section-title { margin-bottom: 0; }
@@ -353,8 +358,10 @@ a:hover { color: var(--creed-accent); }
 
 .category-grid {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 14px;
+  max-width: 1000px;
+  margin: 0 auto;
 }
 
 .category-card {
@@ -453,6 +460,13 @@ a:hover { color: var(--creed-accent); }
   padding: 9px 14px;
   color: var(--creed-text);
   vertical-align: middle;
+}
+
+.events-table td:last-child {
+  max-width: 300px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .table-empty {

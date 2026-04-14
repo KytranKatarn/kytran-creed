@@ -1,0 +1,261 @@
+{% extends "base.html" %}
+{% block title %}API Docs — C.R.E.E.D.{% endblock %}
+{% block header_title %}API Documentation{% endblock %}
+
+{% block head %}
+<style>
+  .api-endpoint {
+    background: var(--creed-panel);
+    border: 1px solid var(--creed-border);
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+    transition: border-color 0.2s;
+  }
+  .api-endpoint:hover { border-color: var(--creed-accent); }
+  .api-method-path {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+  .api-method {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 4px;
+    font-family: 'Antonio', sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  .method-get  { background: rgba(16,185,129,0.2); color: var(--creed-success); }
+  .method-post { background: rgba(139,92,246,0.2); color: var(--creed-accent); }
+  .api-path {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 14px;
+    color: var(--creed-teal);
+  }
+  .api-desc {
+    color: var(--creed-text-dim);
+    font-size: 13px;
+    margin-bottom: 12px;
+  }
+  .api-params {
+    margin-bottom: 12px;
+  }
+  .api-params-title {
+    font-family: 'Antonio', sans-serif;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--creed-accent);
+    margin-bottom: 6px;
+  }
+  .api-params ul {
+    list-style: none;
+    padding: 0;
+  }
+  .api-params li {
+    padding: 3px 0;
+    font-size: 13px;
+    color: var(--creed-text-dim);
+  }
+  .api-params li code {
+    color: var(--creed-teal);
+    background: rgba(0,229,255,0.08);
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-size: 12px;
+  }
+  .api-example pre {
+    background: #08081a;
+    border: 1px solid var(--creed-border);
+    border-radius: 6px;
+    padding: 14px;
+    overflow-x: auto;
+    font-size: 12px;
+    line-height: 1.6;
+    color: var(--creed-text);
+  }
+  .api-example-label {
+    font-family: 'Antonio', sans-serif;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--creed-text-dim);
+    margin-bottom: 6px;
+    margin-top: 10px;
+  }
+  .api-intro {
+    color: var(--creed-text-dim);
+    font-size: 13px;
+    margin-bottom: 24px;
+    line-height: 1.7;
+  }
+  .api-base-url {
+    font-family: 'IBM Plex Mono', monospace;
+    background: rgba(0,229,255,0.08);
+    padding: 2px 8px;
+    border-radius: 4px;
+    color: var(--creed-teal);
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="section-block">
+  <h2 class="section-title">C.R.E.E.D. API Reference</h2>
+  <p class="api-intro">
+    Base URL: <span class="api-base-url">https://creed.kytranempowerment.com/api/v1</span><br>
+    All endpoints accept and return JSON. Badge endpoints return SVG images.
+  </p>
+</div>
+
+<!-- POST /events -->
+<div class="api-endpoint">
+  <div class="api-method-path">
+    <span class="api-method method-post">POST</span>
+    <span class="api-path">/api/v1/events</span>
+  </div>
+  <p class="api-desc">Ingest a governance event into the C.R.E.E.D. compliance database.</p>
+  <div class="api-example">
+    <div class="api-example-label">Request</div>
+    <pre><code>curl -X POST https://creed.kytranempowerment.com/api/v1/events \
+  -H "Content-Type: application/json" \
+  -d '{
+    "event_type": "policy_violation",
+    "source_platform": "archie",
+    "agent_id": "agent_042",
+    "agent_name": "V.I.G.I.L.",
+    "category": "data_protection",
+    "severity": "warning",
+    "description": "Unencrypted PII detected in log output",
+    "metadata": {"file": "output.log", "line": 42}
+  }'</code></pre>
+    <div class="api-example-label">Response (201)</div>
+    <pre><code>{"success": true, "event_id": 127}</code></pre>
+  </div>
+</div>
+
+<!-- GET /events -->
+<div class="api-endpoint">
+  <div class="api-method-path">
+    <span class="api-method method-get">GET</span>
+    <span class="api-path">/api/v1/events</span>
+  </div>
+  <p class="api-desc">List governance events with optional filtering.</p>
+  <div class="api-params">
+    <div class="api-params-title">Query Parameters</div>
+    <ul>
+      <li><code>category</code> — filter by category (e.g. data_protection, transparency)</li>
+      <li><code>severity</code> — filter by severity (info, warning, violation, critical)</li>
+      <li><code>limit</code> — max results, default 50, max 500</li>
+      <li><code>offset</code> — pagination offset, default 0</li>
+    </ul>
+  </div>
+  <div class="api-example">
+    <div class="api-example-label">Request</div>
+    <pre><code>curl "https://creed.kytranempowerment.com/api/v1/events?category=data_protection&limit=10"</code></pre>
+    <div class="api-example-label">Response (200)</div>
+    <pre><code>{
+  "events": [
+    {
+      "id": 127,
+      "event_type": "policy_violation",
+      "source_platform": "archie",
+      "agent_id": "agent_042",
+      "agent_name": "V.I.G.I.L.",
+      "category": "data_protection",
+      "severity": "warning",
+      "description": "Unencrypted PII detected in log output",
+      "created_at": "2026-04-14T12:00:00"
+    }
+  ],
+  "limit": 10,
+  "offset": 0
+}</code></pre>
+  </div>
+</div>
+
+<!-- GET /scores -->
+<div class="api-endpoint">
+  <div class="api-method-path">
+    <span class="api-method method-get">GET</span>
+    <span class="api-path">/api/v1/scores</span>
+  </div>
+  <p class="api-desc">Get computed compliance scores across all governance categories.</p>
+  <div class="api-params">
+    <div class="api-params-title">Query Parameters</div>
+    <ul>
+      <li><code>days</code> — scoring window in days, default 30</li>
+    </ul>
+  </div>
+  <div class="api-example">
+    <div class="api-example-label">Request</div>
+    <pre><code>curl "https://creed.kytranempowerment.com/api/v1/scores?days=30"</code></pre>
+    <div class="api-example-label">Response (200)</div>
+    <pre><code>{
+  "overall_score": 92.5,
+  "grade": "A",
+  "total_events": 384,
+  "categories": {
+    "data_protection": {"score": 95.0, "grade": "A+", "events": 48},
+    "transparency": {"score": 88.0, "grade": "B+", "events": 61}
+  }
+}</code></pre>
+  </div>
+</div>
+
+<!-- GET /audit -->
+<div class="api-endpoint">
+  <div class="api-method-path">
+    <span class="api-method method-get">GET</span>
+    <span class="api-path">/api/v1/audit</span>
+  </div>
+  <p class="api-desc">Get the audit log of administrative actions.</p>
+  <div class="api-params">
+    <div class="api-params-title">Query Parameters</div>
+    <ul>
+      <li><code>limit</code> — max results, default 50, max 500</li>
+      <li><code>offset</code> — pagination offset, default 0</li>
+    </ul>
+  </div>
+  <div class="api-example">
+    <div class="api-example-label">Request</div>
+    <pre><code>curl "https://creed.kytranempowerment.com/api/v1/audit?limit=5"</code></pre>
+    <div class="api-example-label">Response (200)</div>
+    <pre><code>{
+  "entries": [
+    {
+      "id": 1,
+      "user_id": 1,
+      "action": "login",
+      "details": "Admin login from 192.168.1.100",
+      "ip_address": "192.168.1.100",
+      "created_at": "2026-04-14T10:30:00"
+    }
+  ],
+  "limit": 5,
+  "offset": 0
+}</code></pre>
+  </div>
+</div>
+
+<!-- GET /badge/<type> -->
+<div class="api-endpoint">
+  <div class="api-method-path">
+    <span class="api-method method-get">GET</span>
+    <span class="api-path">/api/v1/badge/&lt;type&gt;</span>
+  </div>
+  <p class="api-desc">Get an SVG compliance badge. Types: <code>overall</code>, or any category name (e.g. <code>data_protection</code>).</p>
+  <div class="api-example">
+    <div class="api-example-label">Request</div>
+    <pre><code>curl "https://creed.kytranempowerment.com/api/v1/badge/overall"</code></pre>
+    <div class="api-example-label">Embed (HTML)</div>
+    <pre><code>&lt;img src="https://creed.kytranempowerment.com/api/v1/badge/overall" alt="C.R.E.E.D. Compliance"&gt;</code></pre>
+    <div class="api-example-label">Embed (Markdown)</div>
+    <pre><code>![C.R.E.E.D. Compliance](https://creed.kytranempowerment.com/api/v1/badge/overall)</code></pre>
+  </div>
+</div>
+{% endblock %}

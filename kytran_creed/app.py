@@ -43,7 +43,7 @@ def create_app(config=None):
     def check_setup():
         from flask import request, redirect
         # Skip auth/setup/API/badge/health endpoints
-        if request.endpoint in ("setup", "static", "health", "login", "logout"):
+        if request.endpoint in ("setup", "static", "health", "login", "logout", "dashboard.public_results"):
             return
         if request.path.startswith("/api/") or request.path.startswith("/badge/"):
             return

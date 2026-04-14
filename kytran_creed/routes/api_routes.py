@@ -1,7 +1,7 @@
 import json
 import logging
 from datetime import datetime, timedelta
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify, render_template, request
 
 from kytran_creed.db import get_db
 from kytran_creed.models import GovernanceEvent
@@ -101,6 +101,11 @@ def _get_recent_events(days: int = 30) -> list[dict]:
         return [{"category": row["category"], "severity": row["severity"]} for row in rows]
     finally:
         conn.close()
+
+
+@api_bp.route("/docs")
+def api_docs():
+    return render_template("api_docs.html")
 
 
 @api_bp.route("/events", methods=["POST"])
