@@ -357,14 +357,14 @@ a:hover { color: var(--creed-accent); }
 /* ── Category grid ──────────────────────────── */
 
 .category-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  display: flex;
+  flex-wrap: wrap;
   gap: 14px;
-  max-width: 1000px;
-  margin: 0 auto;
+  justify-content: center;
 }
 
 .category-card {
+  flex: 0 1 180px;
   background: var(--creed-panel);
   border: 1px solid var(--creed-border);
   border-radius: 8px;
