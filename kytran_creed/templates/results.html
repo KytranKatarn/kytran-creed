@@ -212,15 +212,17 @@ function loadResults() {
     .then(function(r) { return r.json(); })
     .then(function(data) {
       document.getElementById('resultsGrade').textContent = data.grade || '--';
+      var score = data.overall != null ? data.overall : data.overall_score;
       document.getElementById('resultsScore').textContent =
-        (data.overall_score != null ? data.overall_score.toFixed(1) + ' / 100' : '--');
+        (score != null ? score.toFixed(1) + ' / 100' : '--');
+      var events = data.event_count != null ? data.event_count : data.total_events;
       document.getElementById('resultsEvents').textContent =
-        (data.total_events != null ? data.total_events + ' events analyzed' : '');
+        (events != null ? events + ' events analyzed' : '');
 
       var grid = document.getElementById('resultsCategoryGrid');
       while (grid.firstChild) { grid.removeChild(grid.firstChild); }
 
-      var cats = data.categories || {};
+      var cats = data.by_category || data.categories || {};
       var keys = Object.keys(cats);
       if (keys.length === 0) {
         var empty = document.createElement('div');
@@ -231,7 +233,18 @@ function loadResults() {
       }
 
       keys.forEach(function(key) {
-        grid.appendChild(buildCategoryCard(key, cats[key]));
+        var val = cats[key];
+        var cat = typeof val === 'number' ? {score: val, grade: null, events: null} : val;
+        if (!cat.grade && cat.score != null) {
+          if (cat.score >= 95) cat.grade = 'A+';
+          else if (cat.score >= 90) cat.grade = 'A';
+          else if (cat.score >= 85) cat.grade = 'B+';
+          else if (cat.score >= 80) cat.grade = 'B';
+          else if (cat.score >= 70) cat.grade = 'C';
+          else if (cat.score >= 60) cat.grade = 'D';
+          else cat.grade = 'F';
+        }
+        grid.appendChild(buildCategoryCard(key, cat));
       });
 
       document.getElementById('resultsUpdated').textContent =
