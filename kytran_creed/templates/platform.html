@@ -1,0 +1,221 @@
+{% extends "base.html" %}
+{% block title %}Platform Health — C.R.E.E.D.{% endblock %}
+{% block header_title %}Live Platform Governance{% endblock %}
+
+{% block content %}
+{% if not stats %}
+<section class="section-block">
+  <div class="platform-offline">
+    <div class="offline-icon">&#9888;</div>
+    <div class="offline-title">Platform Unreachable</div>
+    <div class="offline-desc">Unable to connect to the A.R.C.H.I.E. platform. Stats will appear automatically once the connection is restored.</div>
+  </div>
+</section>
+{% else %}
+
+<!-- Hero Stats Row -->
+<section class="hero-stats">
+  <div class="stat-card stat-card-primary">
+    <div class="stat-value" id="ph-grade">{{ stats.ethics.grade if stats.ethics else '--' }}</div>
+    <div class="stat-grade" id="ph-score">{{ stats.ethics.score if stats.ethics else '--' }} / 100</div>
+    <div class="stat-label">Ethics Grade</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-value" id="ph-agents">{{ stats.agents.total if stats.agents else '--' }}</div>
+    <div class="stat-grade" id="ph-active">
+      {% if stats.agents and stats.agents.by_state %}
+        {{ stats.agents.by_state.get('active', 0) }} active
+      {% else %}
+        --
+      {% endif %}
+    </div>
+    <div class="stat-label">Agent Count</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-value" id="ph-success">{{ '%.1f'|format(stats.jobs.success_rate) if stats.jobs else '--' }}%</div>
+    <div class="stat-grade" id="ph-jobs-detail">
+      {% if stats.jobs %}
+        {{ stats.jobs.total_success_24h }} ok / {{ stats.jobs.total_errors_24h }} err
+      {% else %}
+        --
+      {% endif %}
+    </div>
+    <div class="stat-label">Job Success Rate (24h)</div>
+  </div>
+  <div class="stat-card">
+    {% set welfare_status = stats.welfare.platform_status if stats.welfare else 'unknown' %}
+    <div class="stat-value welfare-dot welfare-{{ welfare_status }}" id="ph-welfare">&#9679;</div>
+    <div class="stat-grade">{{ welfare_status|upper }}</div>
+    <div class="stat-label">Platform Welfare</div>
+  </div>
+</section>
+
+<!-- Department Welfare Table -->
+<section class="section-block">
+  <h2 class="section-title">Department Welfare</h2>
+  {% if stats.welfare and stats.welfare.by_department %}
+  <div class="table-wrapper">
+    <table class="events-table">
+      <thead>
+        <tr>
+          <th>Department</th>
+          <th>Avg Stress</th>
+          <th>Avg Mood</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for dept in stats.welfare.by_department|sort(attribute='avg_stress', reverse=true) %}
+        <tr>
+          <td>{{ dept.department }}</td>
+          <td>
+            <span class="severity-badge {% if dept.avg_stress > 60 %}severity-critical{% elif dept.avg_stress > 40 %}severity-warning{% else %}severity-info{% endif %}">
+              {{ '%.0f'|format(dept.avg_stress) }}%
+            </span>
+          </td>
+          <td>{{ '%.0f'|format(dept.avg_mood) }}%</td>
+          <td>
+            {% if dept.avg_stress > 60 %}
+              <span class="welfare-dot-inline welfare-red">&#9679;</span>
+            {% elif dept.avg_stress > 40 %}
+              <span class="welfare-dot-inline welfare-yellow">&#9679;</span>
+            {% else %}
+              <span class="welfare-dot-inline welfare-green">&#9679;</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="table-empty-standalone">No welfare data available.</div>
+  {% endif %}
+</section>
+
+<!-- Job Health by Department -->
+<section class="section-block">
+  <h2 class="section-title">Job Health by Department</h2>
+  {% if stats.jobs and stats.jobs.by_department %}
+  <div class="table-wrapper">
+    <table class="events-table">
+      <thead>
+        <tr>
+          <th>Department</th>
+          <th>Success</th>
+          <th>Errors</th>
+          <th>Success Rate</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for dept in stats.jobs.by_department|sort(attribute='errors', reverse=true) %}
+        <tr>
+          <td>{{ dept.department }}</td>
+          <td class="ph-success-count">{{ dept.success }}</td>
+          <td>
+            {% if dept.errors > 0 %}
+              <span class="severity-badge severity-critical">{{ dept.errors }}</span>
+            {% else %}
+              <span class="severity-badge severity-info">0</span>
+            {% endif %}
+          </td>
+          <td>
+            {% set total = dept.success + dept.errors %}
+            {% if total > 0 %}
+              {% set rate = (dept.success / total * 100) %}
+              <span class="severity-badge {% if rate >= 90 %}severity-info{% elif rate >= 70 %}severity-warning{% else %}severity-critical{% endif %}">
+                {{ '%.1f'|format(rate) }}%
+              </span>
+            {% else %}
+              <span class="severity-badge severity-info">N/A</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="table-empty-standalone">No job data available.</div>
+  {% endif %}
+</section>
+
+<!-- Directors List -->
+<section class="section-block">
+  <h2 class="section-title">AI Directors</h2>
+  {% if stats.agents and stats.agents.directors %}
+  <div class="directors-grid">
+    {% for dir in stats.agents.directors %}
+    <div class="director-card">
+      <div class="director-acronym">{{ dir.acronym or dir.name }}</div>
+      <div class="director-name">{{ dir.display_name or dir.name }}</div>
+      <div class="director-dept">{{ dir.department }}</div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="table-empty-standalone">No director data available.</div>
+  {% endif %}
+</section>
+
+<!-- Timestamp -->
+<div class="platform-timestamp">
+  Last updated: {{ stats.timestamp if stats.timestamp else 'unknown' }}
+</div>
+
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+"use strict";
+// Auto-refresh platform stats every 60s via client-side fetch
+var phCountdown = 60;
+
+function refreshPlatform() {
+  fetch("/api/platform-stats")
+    .then(function(r) { return r.ok ? r.json() : null; })
+    .then(function(data) {
+      if (!data || !data.success) return;
+      // Update hero values
+      if (data.ethics) {
+        var ge = document.getElementById("ph-grade");
+        var se = document.getElementById("ph-score");
+        if (ge) ge.textContent = data.ethics.grade || "--";
+        if (se) se.textContent = (data.ethics.score || "--") + " / 100";
+      }
+      if (data.agents) {
+        var ae = document.getElementById("ph-agents");
+        if (ae) ae.textContent = data.agents.total || "--";
+        var ace = document.getElementById("ph-active");
+        if (ace && data.agents.by_state) {
+          ace.textContent = (data.agents.by_state.active || 0) + " active";
+        }
+      }
+      if (data.jobs) {
+        var suc = document.getElementById("ph-success");
+        if (suc) suc.textContent = (data.jobs.success_rate != null ? data.jobs.success_rate.toFixed(1) : "--") + "%";
+        var jd = document.getElementById("ph-jobs-detail");
+        if (jd) jd.textContent = data.jobs.total_success_24h + " ok / " + data.jobs.total_errors_24h + " err";
+      }
+      if (data.welfare) {
+        var we = document.getElementById("ph-welfare");
+        if (we) {
+          we.className = "stat-value welfare-dot welfare-" + (data.welfare.platform_status || "unknown");
+        }
+      }
+    })
+    .catch(function(e) { console.warn("Platform stats refresh failed:", e); });
+  phCountdown = 60;
+}
+
+function phTick() {
+  phCountdown--;
+  if (phCountdown <= 0) refreshPlatform();
+}
+
+document.addEventListener("DOMContentLoaded", function() {
+  setInterval(phTick, 1000);
+});
+</script>
+{% endblock %}
