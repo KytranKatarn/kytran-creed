@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block title %}Open Governance Toolkit — C.R.E.E.D.{% endblock %}
+{% block header_title %}Open Governance Toolkit{% endblock %}
+
+{% block content %}
+<div class="creed-section">
+  <div class="breadcrumb"><a href="/programs">Programs</a> / Open Governance Toolkit</div>
+
+  <div class="creed-hero">
+    <div class="program-icon-lg">&#9651;</div>
+    <div>
+      <h2>Open Governance Toolkit</h2>
+      <p class="creed-subtitle">
+        Free, practical tools for AI governance practitioners — checklists,
+        audit templates, and assessment frameworks you can use today.
+      </p>
+    </div>
+  </div>
+
+  <div class="creed-card creed-card-accent" style="margin-bottom:1.5rem;">
+    <strong>Beta</strong> — The toolkit is actively being built. Resources below
+    reflect current C.R.E.E.D. governance practice and will be expanded with
+    community input. All materials are free to use under CC BY 4.0.
+  </div>
+
+  <div class="toolkit-grid">
+    <div class="toolkit-card">
+      <div class="toolkit-icon">&#9679;</div>
+      <h4>AI Agent Welfare Checklist</h4>
+      <p>12 questions to assess whether your AI agents are operating under
+         ethical welfare conditions.</p>
+      <div class="toolkit-items">
+        <div class="toolkit-item">&#10003; Stress monitoring in place?</div>
+        <div class="toolkit-item">&#10003; Recovery cycles defined?</div>
+        <div class="toolkit-item">&#10003; Dispatch equity measured?</div>
+        <div class="toolkit-item">&#10003; Welfare alerts reach humans?</div>
+        <div class="toolkit-item toolkit-item-more">+ 8 more items</div>
+      </div>
+      <span class="badge-coming">Full version coming soon</span>
+    </div>
+
+    <div class="toolkit-card">
+      <div class="toolkit-icon">&#9632;</div>
+      <h4>Governance Event Taxonomy</h4>
+      <p>Standard categories and severity levels for classifying AI governance
+         events — compatible with the C.R.E.E.D. API.</p>
+      <div class="toolkit-items">
+        <div class="toolkit-item">5 categories (Transparency, Fairness…)</div>
+        <div class="toolkit-item">4 severity levels (Info → Critical)</div>
+        <div class="toolkit-item">Weighted scoring formula</div>
+        <div class="toolkit-item">Grade scale (A+ through F)</div>
+      </div>
+      <a href="/api/v1/docs" class="toolkit-link">View API spec →</a>
+    </div>
+
+    <div class="toolkit-card">
+      <div class="toolkit-icon">&#9650;</div>
+      <h4>Ethics Score Calculator</h4>
+      <p>Submit governance events and get an ethics score for your AI system
+         using the C.R.E.E.D. scoring engine.</p>
+      <div class="toolkit-items">
+        <div class="toolkit-item">REST API endpoint</div>
+        <div class="toolkit-item">30-day rolling window</div>
+        <div class="toolkit-item">Per-category breakdown</div>
+      </div>
+      <a href="/api/v1/docs" class="toolkit-link">Try the API →</a>
+    </div>
+
+    <div class="toolkit-card toolkit-card-coming">
+      <div class="toolkit-icon">&#9670;</div>
+      <h4>Audit Report Template</h4>
+      <p>Structured template for producing an AI governance audit report,
+         aligned with C.R.E.E.D. transparency standards.</p>
+      <span class="badge-coming">Coming Q3 2026</span>
+    </div>
+  </div>
+</div>
+
+<style>
+.breadcrumb { font-size: 0.8rem; color: #888; margin-bottom: 1.5rem; }
+.breadcrumb a { color: var(--creed-accent, #8b5cf6); text-decoration: none; }
+.creed-hero { display: flex; align-items: flex-start; gap: 1.5rem; margin-bottom: 2rem; }
+.program-icon-lg { font-size: 3rem; color: var(--creed-accent, #8b5cf6); line-height: 1; }
+.creed-card-accent { border-left: 3px solid var(--creed-accent, #8b5cf6); font-size: 0.875rem; color: #ccc; }
+.toolkit-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.5rem; }
+.toolkit-card { background: var(--card-bg, #1a1a2e); border: 1px solid #2a2a3e; border-radius: 8px; padding: 1.5rem; }
+.toolkit-card-coming { opacity: 0.6; }
+.toolkit-icon { font-size: 1.5rem; color: var(--creed-accent, #8b5cf6); margin-bottom: 0.75rem; }
+.toolkit-card h4 { font-family: 'Orbitron', monospace; font-size: 0.9rem; color: #e0e0e0; margin: 0 0 0.5rem; }
+.toolkit-card p { font-size: 0.83rem; color: #aaa; line-height: 1.6; margin: 0 0 1rem; }
+.toolkit-items { margin-bottom: 1rem; }
+.toolkit-item { font-size: 0.78rem; color: #ccc; padding: 0.15rem 0; }
+.toolkit-item-more { color: #666; font-style: italic; }
+.toolkit-link { font-size: 0.8rem; color: var(--creed-accent, #8b5cf6); font-weight: 600; text-decoration: none; }
+.badge-coming { display: inline-block; padding: 0.2rem 0.6rem; background: #333; color: #888; border-radius: 4px; font-size: 0.7rem; text-transform: uppercase; }
+</style>
+{% endblock %}

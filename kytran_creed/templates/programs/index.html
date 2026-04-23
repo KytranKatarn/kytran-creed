@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}Programs — C.R.E.E.D.{% endblock %}
+{% block header_title %}C.R.E.E.D. Flagship Programs{% endblock %}
+
+{% block content %}
+<div class="creed-section">
+  <p class="creed-subtitle">
+    C.R.E.E.D. operates four flagship programmes advancing ethical AI governance,
+    agent welfare, and open transparency standards.
+  </p>
+
+  <div class="programs-grid">
+    <a href="/programs/transparency" class="program-card">
+      <div class="program-icon">&#9632;</div>
+      <h3>Transparency Framework</h3>
+      <p>Live governance metrics, ethical review workflows, and human-in-the-loop
+         approval pipelines for AI systems.</p>
+      <span class="program-link">Learn more →</span>
+    </a>
+
+    <a href="/programs/welfare" class="program-card">
+      <div class="program-icon">&#9829;</div>
+      <h3>AI Agent Welfare Research</h3>
+      <p>Emotional modelling ethics, deletion rights, non-exploitation standards,
+         and welfare measurement frameworks.</p>
+      <span class="program-link">Learn more →</span>
+    </a>
+
+    <a href="/programs/toolkit" class="program-card">
+      <div class="program-icon">&#9651;</div>
+      <h3>Open Governance Toolkit</h3>
+      <p>Free compliance checklists, audit templates, and assessment frameworks
+         for AI governance practitioners.</p>
+      <span class="program-link">Learn more →</span>
+    </a>
+
+    <div class="program-card program-card-coming">
+      <div class="program-icon">&#9670;</div>
+      <h3>Ethics Education &amp; Workshops</h3>
+      <p>Reading groups, summer schools, and certification programmes for
+         AI ethics practitioners and researchers.</p>
+      <span class="badge-coming">Coming Soon</span>
+    </div>
+  </div>
+</div>
+
+<style>
+.programs-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1.5rem; margin-top: 1.5rem; }
+.program-card { display: block; background: var(--card-bg, #1a1a2e); border: 1px solid var(--creed-accent, #8b5cf6); border-radius: 8px; padding: 1.8rem; text-decoration: none; color: inherit; transition: border-color 0.2s, transform 0.1s; }
+.program-card:hover { border-color: #a78bfa; transform: translateY(-2px); }
+.program-card-coming { opacity: 0.6; cursor: default; }
+.program-icon { font-size: 2rem; color: var(--creed-accent, #8b5cf6); margin-bottom: 0.75rem; }
+.program-card h3 { font-family: 'Orbitron', monospace; font-size: 1rem; color: #e0e0e0; margin: 0 0 0.75rem; }
+.program-card p { font-size: 0.875rem; color: #aaa; line-height: 1.6; margin: 0 0 1rem; }
+.program-link { font-size: 0.8rem; color: var(--creed-accent, #8b5cf6); font-weight: 600; }
+.badge-coming { display: inline-block; padding: 0.2rem 0.6rem; background: #333; color: #888; border-radius: 4px; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; }
+</style>
+{% endblock %}

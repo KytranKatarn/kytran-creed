@@ -32,6 +32,12 @@
         <a href="/results" class="lcars-nav-item {% if request.path == '/results' %}active{% endif %}">
           <span class="nav-icon">&#9679;</span> Public Results
         </a>
+        <a href="/welfare" class="lcars-nav-item {% if request.path == '/welfare' %}active{% endif %}">
+          <span class="nav-icon">&#9829;</span> Agent Welfare
+        </a>
+        <a href="/programs" class="lcars-nav-item {% if request.path.startswith('/programs') %}active{% endif %}">
+          <span class="nav-icon">&#9651;</span> Programs
+        </a>
         <a href="/settings" class="lcars-nav-item {% if request.path == '/settings' %}active{% endif %}">
           <span class="nav-icon">&#9670;</span> Settings
         </a>

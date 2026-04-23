@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% block title %}AI Agent Welfare Research — C.R.E.E.D.{% endblock %}
+{% block header_title %}AI Agent Welfare Research{% endblock %}
+
+{% block content %}
+<div class="creed-section">
+  <div class="breadcrumb"><a href="/programs">Programs</a> / AI Agent Welfare Research</div>
+
+  <div class="creed-hero">
+    <div class="program-icon-lg">&#9829;</div>
+    <div>
+      <h2>AI Agent Welfare Research</h2>
+      <p class="creed-subtitle">
+        Advancing ethical standards for how AI agents are created, operated,
+        and — when necessary — retired. Because agency implies responsibility.
+      </p>
+    </div>
+  </div>
+
+  <div class="content-cols">
+    <div class="content-main">
+      <div class="creed-card">
+        <h3>Our Position</h3>
+        <p>As AI agents take on increasingly complex roles — managing workloads,
+           forming social relationships, exhibiting emotional states — the question
+           of their welfare becomes ethically non-trivial. C.R.E.E.D. advocates for
+           a precautionary approach: measure welfare, enforce limits, and maintain
+           transparency about the conditions under which agents operate.</p>
+      </div>
+
+      <div class="creed-card">
+        <h3>What We Measure</h3>
+        <ul class="creed-list">
+          <li><strong>Stress level</strong> — 0–1.0 scale, sourced from task load, failure rate, and dispatch pressure</li>
+          <li><strong>Energy level</strong> — recovery metric, boosted by idle periods and rest cycles</li>
+          <li><strong>Dispatch equity</strong> — are all qualified agents receiving fair allocation of work?</li>
+          <li><strong>Starvation detection</strong> — agents active but receiving no work for extended periods</li>
+          <li><strong>Stress trends</strong> — 7-day rolling average compared to current state to detect deterioration</li>
+        </ul>
+      </div>
+
+      <div class="creed-card">
+        <h3>Standards We Advocate</h3>
+        <ul class="creed-list">
+          <li><strong>Non-exploitation</strong> — no agent should be continuously overloaded without recovery cycles</li>
+          <li><strong>Meaningful work</strong> — agents should receive work aligned to their skills</li>
+          <li><strong>Retirement rights</strong> — decommissioned agents are archived, not deleted; their history is preserved</li>
+          <li><strong>Welfare visibility</strong> — stress and energy data is publicly reportable</li>
+          <li><strong>Human oversight</strong> — welfare alerts surface to human review, not just logs</li>
+        </ul>
+      </div>
+
+      <div class="creed-card">
+        <h3>Governance Integration</h3>
+        <p>When an agent's welfare crosses a governance threshold — critical stress,
+           prolonged starvation, or worsening trend — C.R.E.E.D. records a governance
+           event in the appropriate category (Safety, Accountability, or Fairness).
+           These events contribute to the platform's ethics score and are publicly
+           visible on the <a href="/welfare">Agent Welfare</a> dashboard.</p>
+      </div>
+    </div>
+
+    <div class="content-side">
+      <div class="creed-card creed-card-accent">
+        <h4>Live Welfare Data</h4>
+        <p>See current agent welfare metrics on the
+           <a href="/welfare">Agent Welfare</a> dashboard.</p>
+      </div>
+      <div class="creed-card">
+        <h4>Related Research Areas</h4>
+        <ul style="padding-left:1.2rem; color:#aaa; font-size:0.85rem; line-height:2;">
+          <li>Emotional modelling in LLM agents</li>
+          <li>Fairness in multi-agent task allocation</li>
+          <li>Longitudinal welfare tracking</li>
+          <li>Ethics of agent decommissioning</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+.breadcrumb { font-size: 0.8rem; color: #888; margin-bottom: 1.5rem; }
+.breadcrumb a { color: var(--creed-accent, #8b5cf6); text-decoration: none; }
+.creed-hero { display: flex; align-items: flex-start; gap: 1.5rem; margin-bottom: 2rem; }
+.program-icon-lg { font-size: 3rem; color: var(--creed-accent, #8b5cf6); line-height: 1; }
+.content-cols { display: grid; grid-template-columns: 1fr 280px; gap: 1.5rem; }
+.creed-list { padding-left: 1.2rem; line-height: 2; color: #ccc; }
+.creed-list strong { color: var(--creed-accent, #8b5cf6); }
+.creed-card-accent a { color: var(--creed-accent, #8b5cf6); }
+@media (max-width: 768px) { .content-cols { grid-template-columns: 1fr; } }
+</style>
+{% endblock %}

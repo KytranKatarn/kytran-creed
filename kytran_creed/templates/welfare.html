@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+{% block title %}Agent Welfare — C.R.E.E.D.{% endblock %}
+{% block header_title %}Agent Welfare Report{% endblock %}
+
+{% block content %}
+<div class="creed-section">
+  <div class="creed-section-header">
+    <h2>AI Agent Welfare</h2>
+    <p class="creed-subtitle">
+      Live welfare metrics from the A.R.C.H.I.E. platform. Part of the
+      <a href="/programs/welfare">AI Agent Welfare Research</a> programme.
+    </p>
+  </div>
+
+  {% if welfare %}
+  <!-- Summary cards -->
+  <div class="creed-stats-grid">
+    <div class="creed-stat-card">
+      <div class="stat-value">{{ welfare.agent_count or 0 }}</div>
+      <div class="stat-label">Active Agents</div>
+    </div>
+    <div class="creed-stat-card {% if (welfare.high_stress_agents or 0) > 3 %}card-warning{% endif %}">
+      <div class="stat-value">{{ welfare.high_stress_agents or 0 }}</div>
+      <div class="stat-label">High Stress (&gt;70%)</div>
+    </div>
+    <div class="creed-stat-card">
+      <div class="stat-value">{{ welfare.departments or 0 }}</div>
+      <div class="stat-label">Departments</div>
+    </div>
+    <div class="creed-stat-card">
+      <div class="stat-value {{ 'grade-good' if (welfare.ethics_score or 0) >= 90 else 'grade-warn' if (welfare.ethics_score or 0) >= 70 else 'grade-bad' }}">
+        {{ welfare.ethics_grade or '—' }}
+      </div>
+      <div class="stat-label">Ethics Grade</div>
+    </div>
+  </div>
+
+  <!-- Department welfare table -->
+  {% if welfare.department_welfare %}
+  <div class="creed-card">
+    <h3>Welfare by Department</h3>
+    <table class="creed-table">
+      <thead>
+        <tr>
+          <th>Department</th>
+          <th>Avg Stress</th>
+          <th>Mood</th>
+          <th>Agents at Risk</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for dept in welfare.department_welfare %}
+        <tr>
+          <td>{{ dept.department }}</td>
+          <td>
+            <div class="stress-bar-wrap">
+              <div class="stress-bar" style="width:{{ ((dept.avg_stress or 0) * 100)|round|int }}%"></div>
+              <span>{{ ((dept.avg_stress or 0) * 100)|round|int }}%</span>
+            </div>
+          </td>
+          <td>{{ dept.dominant_mood or '—' }}</td>
+          <td>{{ dept.agents_at_risk or 0 }}</td>
+          <td>
+            {% if (dept.avg_stress or 0) >= 0.7 %}
+              <span class="badge badge-warning">At Risk</span>
+            {% elif (dept.avg_stress or 0) >= 0.5 %}
+              <span class="badge badge-info">Elevated</span>
+            {% else %}
+              <span class="badge badge-ok">Healthy</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+
+  {% else %}
+  <div class="creed-card creed-card-muted">
+    <p>Platform welfare data is temporarily unavailable. Check back shortly.</p>
+  </div>
+  {% endif %}
+
+  <!-- Mission statement -->
+  <div class="creed-card creed-card-accent">
+    <h3>About This Report</h3>
+    <p>
+      C.R.E.E.D. monitors the emotional and operational welfare of AI agents in the
+      A.R.C.H.I.E. platform. Metrics include stress levels, energy, mood states, and
+      dispatch equity. When an agent operates under chronic high stress or receives no
+      work for extended periods, a governance event is raised and recorded here.
+    </p>
+    <p>
+      Our <a href="/programs/welfare">AI Agent Welfare Research</a> programme advocates for
+      non-exploitation standards, deletion rights, and transparent welfare modelling for all
+      AI agents. This page is part of our public transparency commitment.
+    </p>
+  </div>
+</div>
+
+<style>
+.creed-stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+.creed-stat-card { background: var(--card-bg, #1a1a2e); border: 1px solid var(--creed-accent, #8b5cf6); border-radius: 6px; padding: 1.2rem; text-align: center; }
+.creed-stat-card.card-warning { border-color: #f59e0b; }
+.stat-value { font-family: 'Orbitron', monospace; font-size: 2rem; color: var(--creed-accent, #8b5cf6); }
+.stat-label { font-size: 0.75rem; color: #888; margin-top: 0.25rem; text-transform: uppercase; letter-spacing: 0.05em; }
+.grade-good { color: #10b981; }
+.grade-warn { color: #f59e0b; }
+.grade-bad  { color: #ef4444; }
+.stress-bar-wrap { display: flex; align-items: center; gap: 0.5rem; }
+.stress-bar { height: 8px; background: linear-gradient(90deg, #10b981, #f59e0b, #ef4444); border-radius: 4px; max-width: 100px; transition: width 0.3s; }
+.badge { display: inline-block; padding: 0.15rem 0.5rem; border-radius: 4px; font-size: 0.7rem; font-weight: 600; text-transform: uppercase; }
+.badge-ok      { background: #10b98122; color: #10b981; }
+.badge-info    { background: #3b82f622; color: #3b82f6; }
+.badge-warning { background: #f59e0b22; color: #f59e0b; }
+.creed-card-accent { border-left: 3px solid var(--creed-accent, #8b5cf6); }
+.creed-card-accent a { color: var(--creed-accent, #8b5cf6); }
+</style>
+{% endblock %}
