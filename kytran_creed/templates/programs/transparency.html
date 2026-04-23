@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block title %}Transparency Framework — C.R.E.E.D.{% endblock %}
+{% block header_title %}C.R.E.E.D. Transparency Framework{% endblock %}
+
+{% block content %}
+<div class="creed-section">
+  <div class="breadcrumb"><a href="/programs">Programs</a> / Transparency Framework</div>
+
+  <div class="creed-hero">
+    <div class="program-icon-lg">&#9632;</div>
+    <div>
+      <h2>Transparency Framework</h2>
+      <p class="creed-subtitle">
+        Real-time governance metrics, structured ethical review, and auditable
+        decision trails for AI systems operating in production.
+      </p>
+    </div>
+  </div>
+
+  <div class="content-cols">
+    <div class="content-main">
+      <div class="creed-card">
+        <h3>What We Track</h3>
+        <p>The Transparency Framework defines five governance categories that
+           every AI action can be measured against:</p>
+        <ul class="creed-list">
+          <li><strong>Transparency</strong> — decisions are explainable and auditable</li>
+          <li><strong>Fairness</strong> — resources and workload are allocated equitably</li>
+          <li><strong>Safety</strong> — agents operate within welfare and risk thresholds</li>
+          <li><strong>Privacy</strong> — personal data is handled with appropriate controls</li>
+          <li><strong>Accountability</strong> — violations are recorded and acted upon</li>
+        </ul>
+      </div>
+
+      <div class="creed-card">
+        <h3>How Scoring Works</h3>
+        <p>Each governance event carries a severity weight:</p>
+        <table class="creed-table">
+          <thead><tr><th>Severity</th><th>Weight</th><th>Example</th></tr></thead>
+          <tbody>
+            <tr><td><span class="badge badge-ok">Info</span></td><td>0</td><td>Routine audit log entry</td></tr>
+            <tr><td><span class="badge badge-info">Warning</span></td><td>1</td><td>Agent receiving no dispatch work</td></tr>
+            <tr><td><span class="badge badge-warning">Violation</span></td><td>3</td><td>Critical stress threshold exceeded</td></tr>
+            <tr><td><span class="badge badge-danger">Critical</span></td><td>5</td><td>Safety constraint breached</td></tr>
+          </tbody>
+        </table>
+        <p style="margin-top:1rem;">The overall ethics score is calculated as
+           <code>100 − (weighted_violations / total_events × 100)</code> and mapped
+           to a letter grade (A+ through F).</p>
+      </div>
+
+      <div class="creed-card">
+        <h3>Human-in-the-Loop Approval</h3>
+        <p>High-cost or high-risk AI actions require explicit human approval before
+           execution. Approved, denied, and escalated actions are all recorded as
+           governance events to maintain a complete audit trail.</p>
+      </div>
+    </div>
+
+    <div class="content-side">
+      <div class="creed-card creed-card-accent">
+        <h4>Live Governance Data</h4>
+        <p>View real-time scores and recent events on the
+           <a href="/">Dashboard</a> or
+           <a href="/results">Public Results</a> page.</p>
+      </div>
+      <div class="creed-card">
+        <h4>API Access</h4>
+        <p>Submit events or query scores programmatically via the
+           <a href="/api/v1/docs">C.R.E.E.D. API</a>.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+.breadcrumb { font-size: 0.8rem; color: #888; margin-bottom: 1.5rem; }
+.breadcrumb a { color: var(--creed-accent, #8b5cf6); text-decoration: none; }
+.creed-hero { display: flex; align-items: flex-start; gap: 1.5rem; margin-bottom: 2rem; }
+.program-icon-lg { font-size: 3rem; color: var(--creed-accent, #8b5cf6); line-height: 1; }
+.content-cols { display: grid; grid-template-columns: 1fr 280px; gap: 1.5rem; }
+.creed-list { padding-left: 1.2rem; line-height: 2; color: #ccc; }
+.creed-list strong { color: var(--creed-accent, #8b5cf6); }
+code { background: #2a2a3e; padding: 0.1rem 0.4rem; border-radius: 3px; font-family: 'IBM Plex Mono', monospace; font-size: 0.85em; }
+.badge-danger { background: #ef444422; color: #ef4444; }
+.creed-card-accent a { color: var(--creed-accent, #8b5cf6); }
+@media (max-width: 768px) { .content-cols { grid-template-columns: 1fr; } }
+</style>
+{% endblock %}

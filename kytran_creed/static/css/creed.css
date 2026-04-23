@@ -560,6 +560,120 @@ a:hover { color: var(--creed-accent); }
   box-shadow: 0 0 8px rgba(139,92,246,0.3);
 }
 
+/* ── Platform Health ────────────────────────── */
+
+.welfare-dot {
+  line-height: 1;
+}
+.welfare-green { color: var(--creed-success); }
+.welfare-yellow { color: var(--creed-warning); }
+.welfare-red { color: var(--creed-danger); }
+.welfare-unknown { color: var(--creed-text-dim); }
+
+.welfare-dot-inline {
+  font-size: 16px;
+}
+
+.platform-offline {
+  text-align: center;
+  padding: 60px 24px;
+  background: var(--creed-panel);
+  border: 1px solid var(--creed-border);
+  border-radius: 10px;
+}
+
+.offline-icon {
+  font-size: 48px;
+  color: var(--creed-warning);
+  margin-bottom: 16px;
+}
+
+.offline-title {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--creed-warning);
+  margin-bottom: 8px;
+}
+
+.offline-desc {
+  font-size: 13px;
+  color: var(--creed-text-dim);
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+.table-empty-standalone {
+  text-align: center;
+  color: var(--creed-text-dim);
+  padding: 24px;
+  background: var(--creed-panel);
+  border: 1px solid var(--creed-border);
+  border-radius: 8px;
+  font-size: 13px;
+}
+
+.ph-success-count {
+  color: var(--creed-success);
+  font-weight: 600;
+}
+
+/* ── Directors Grid ────────────────────────── */
+
+.directors-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: center;
+}
+
+.director-card {
+  flex: 0 1 200px;
+  background: var(--creed-panel);
+  border: 1px solid var(--creed-border);
+  border-radius: 8px;
+  padding: 16px;
+  text-align: center;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.director-card:hover {
+  border-color: var(--creed-accent);
+  box-shadow: 0 0 12px rgba(139,92,246,0.15);
+}
+
+.director-acronym {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--creed-teal);
+  letter-spacing: 1px;
+  margin-bottom: 4px;
+}
+
+.director-name {
+  font-family: 'Antonio', sans-serif;
+  font-size: 13px;
+  color: var(--creed-text);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+
+.director-dept {
+  font-size: 11px;
+  color: var(--creed-text-dim);
+  letter-spacing: 0.5px;
+}
+
+.platform-timestamp {
+  text-align: center;
+  font-size: 11px;
+  color: var(--creed-text-dim);
+  margin-top: 24px;
+  letter-spacing: 0.5px;
+}
+
 /* ── Responsive ─────────────────────────────── */
 
 @media (max-width: 1024px) {
