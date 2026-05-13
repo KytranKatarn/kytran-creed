@@ -1,8 +1,17 @@
+import json
 import logging
+import os
+import urllib.parse
+import urllib.request
 from functools import wraps
 
 import bcrypt
 from flask import flash, redirect, render_template, request, session
+
+_PLATFORM_PUBLIC = os.environ.get("KYTRAN_PLATFORM_URL", "https://platform.kytranempowerment.com")
+_PLATFORM_INTERNAL = os.environ.get("KYTRAN_PLATFORM_INTERNAL", "http://192.168.1.200:3000")
+_CREED_CLIENT_ID = os.environ.get("CREED_OAUTH_CLIENT_ID", "creed")
+_CREED_CLIENT_SECRET = os.environ.get("CREED_OAUTH_SECRET", "creed_cs_k9mx4p2r7n8v3j5q")
 from flask_login import (
     LoginManager,
     UserMixin,
@@ -129,6 +138,79 @@ def register_auth_routes(app):
                 return redirect(next_page)
             flash("Invalid username or password", "error")
         return render_template("login.html")
+
+    @app.route("/auth/kytran/login")
+    def kytran_sso_login():
+        session["sso_next"] = request.args.get("next", "/")
+        callback = request.url_root.rstrip("/") + "/auth/kytran/callback"
+        authorize_url = (
+            f"{_PLATFORM_PUBLIC}/oauth/authorize"
+            f"?client_id={urllib.parse.quote(_CREED_CLIENT_ID)}"
+            f"&redirect_uri={urllib.parse.quote(callback)}"
+            f"&response_type=code"
+        )
+        return redirect(authorize_url)
+
+    @app.route("/auth/kytran/callback")
+    def kytran_sso_callback():
+        code = request.args.get("code")
+        if not code:
+            flash("SSO login failed — no code returned", "error")
+            return redirect("/login")
+        callback = request.url_root.rstrip("/") + "/auth/kytran/callback"
+        try:
+            payload = urllib.parse.urlencode({
+                "grant_type": "authorization_code",
+                "code": code,
+                "redirect_uri": callback,
+                "client_id": _CREED_CLIENT_ID,
+                "client_secret": _CREED_CLIENT_SECRET,
+            }).encode()
+            req = urllib.request.Request(
+                f"{_PLATFORM_INTERNAL}/oauth/token",
+                data=payload,
+                method="POST",
+                headers={"Content-Type": "application/x-www-form-urlencoded"},
+            )
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                token_data = json.loads(resp.read())
+        except Exception:
+            logger.exception("CREED SSO token exchange failed")
+            flash("SSO login failed — could not reach platform", "error")
+            return redirect("/login")
+
+        user_info = token_data.get("user") or {}
+        username = user_info.get("username") or "sso_user"
+        email = user_info.get("email") or ""
+        is_owner = user_info.get("is_owner", False)
+        platform_role = user_info.get("role", "viewer")
+        creed_role = "admin" if (is_owner or platform_role == "admin") else "viewer"
+
+        db = get_db()
+        try:
+            existing = db.execute("SELECT id FROM users WHERE username = ?", (username,)).fetchone()
+            if existing:
+                db.execute(
+                    "UPDATE users SET email = ?, role = ?, sso_provider = 'kytran' WHERE username = ?",
+                    (email, creed_role, username),
+                )
+                user_id = existing["id"]
+            else:
+                db.execute(
+                    "INSERT INTO users (username, role, email, display_name, sso_provider) VALUES (?, ?, ?, ?, 'kytran')",
+                    (username, creed_role, email, username.title()),
+                )
+                user_id = db.execute("SELECT last_insert_rowid()").fetchone()[0]
+            db.commit()
+            user = User(user_id, username, creed_role, email=email)
+            login_user(user)
+            return redirect(session.pop("sso_next", "/"))
+        except Exception:
+            logger.exception("CREED SSO user upsert failed")
+            flash("SSO login error — please try again", "error")
+            return redirect("/login")
+        finally:
+            db.close()
 
     @app.route("/logout")
     @login_required

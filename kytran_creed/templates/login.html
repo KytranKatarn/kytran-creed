@@ -1,24 +1,82 @@
-{% extends "base.html" %}
-{% block title %}Login — C.R.E.E.D.{% endblock %}
-{% block header_title %}Access Control{% endblock %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign In — C.R.E.E.D.</title>
+    <link rel="icon" type="image/svg+xml" href="/static/img/creed-logo.svg">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root { --accent:#a855f7; --accent-dim:rgba(168,85,247,0.15); --accent-glow:rgba(168,85,247,0.3); --bg:#0a0a1a; --panel:#111827; --border:#1f2937; --text:#e0e0e0; --muted:#9ca3af; }
+        *{margin:0;padding:0;box-sizing:border-box;}
+        body{background:var(--bg);color:var(--text);font-family:'IBM Plex Mono',monospace;min-height:100vh;overflow-x:hidden;display:flex;align-items:center;justify-content:center;}
+        body::before{content:'';position:fixed;inset:0;background:linear-gradient(rgba(168,85,247,0.08) 1px,transparent 1px),linear-gradient(90deg,rgba(168,85,247,0.08) 1px,transparent 1px);background-size:60px 60px;pointer-events:none;z-index:0;}
+        .login-page{position:relative;z-index:1;width:100%;max-width:420px;padding:2rem;}
+        .login-card{background:var(--panel);border:1px solid var(--border);border-radius:12px;overflow:hidden;}
+        .login-header{padding:2.5rem 2rem 1.5rem;text-align:center;border-bottom:1px solid var(--border);}
+        .login-header img{height:64px;width:64px;margin-bottom:1rem;filter:drop-shadow(0 0 16px var(--accent-glow));}
+        .login-header h1{font-family:'Orbitron',sans-serif;font-size:1rem;color:var(--accent);letter-spacing:2px;margin-bottom:0.3rem;}
+        .login-header p{color:var(--muted);font-size:0.72rem;line-height:1.5;}
+        .login-body{padding:2rem;}
+        .form-group{margin-bottom:1rem;}
+        .form-group label{display:block;font-size:0.7rem;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:6px;}
+        .form-group input{width:100%;padding:11px 14px;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:0.9rem;font-family:'IBM Plex Mono',monospace;transition:border-color 0.2s;}
+        .form-group input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 8px var(--accent-glow);}
+        .login-btn{width:100%;padding:12px;margin-top:4px;background:var(--accent);border:none;border-radius:6px;color:#fff;font-family:'IBM Plex Mono',monospace;font-size:0.85rem;font-weight:600;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:opacity 0.2s;}
+        .login-btn:hover{opacity:0.85;}
+        .divider{display:flex;align-items:center;gap:12px;margin:20px 0;color:var(--muted);font-size:0.7rem;letter-spacing:1px;text-transform:uppercase;}
+        .divider::before,.divider::after{content:'';flex:1;height:1px;background:var(--border);}
+        .sso-btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:12px;background:transparent;border:1px solid var(--accent);border-radius:6px;color:var(--accent);font-size:0.82rem;font-weight:600;letter-spacing:0.5px;cursor:pointer;text-decoration:none;transition:background 0.2s;}
+        .sso-btn:hover{background:var(--accent-dim);}
+        .sso-btn img{height:18px;width:auto;}
+        .login-footer{padding:1rem 2rem;text-align:center;border-top:1px solid var(--border);}
+        .login-footer a{color:var(--muted);text-decoration:none;font-size:0.78rem;transition:color 0.2s;}
+        .login-footer a:hover{color:var(--accent);}
+        .flash{padding:10px 14px;margin-bottom:16px;border-radius:6px;font-size:0.82rem;}
+        .flash-error{background:rgba(239,68,68,0.15);color:#ef4444;}
+        .flash-success{background:rgba(34,197,94,0.15);color:#22c55e;}
+    </style>
+</head>
+<body>
+<div class="login-page">
+    <div class="login-card">
+        <div class="login-header">
+            <img src="/static/img/creed-logo.svg" alt="C.R.E.E.D.">
+            <h1>C.R.E.E.D.</h1>
+            <p>Compliance, Rights &amp; Ethical Enforcement Directive</p>
+        </div>
+        <div class="login-body">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+            {% for category, message in messages %}
+            <div class="flash flash-{{ category }}">{{ message }}</div>
+            {% endfor %}
+            {% endif %}
+            {% endwith %}
 
-{% block content %}
-<div class="auth-centered">
-  <div class="auth-card">
-    <h1 class="auth-title">C.R.E.E.D.</h1>
-    <p class="auth-subtitle">Compliance, Rights &amp; Ethical Enforcement Directive</p>
+            <form method="POST" action="/login">
+                <div class="form-group">
+                    <label for="username">Username</label>
+                    <input type="text" id="username" name="username" autocomplete="username" required autofocus>
+                </div>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" autocomplete="current-password" required>
+                </div>
+                <button type="submit" class="login-btn">Sign In</button>
+            </form>
 
-    <form method="POST" action="/login" class="auth-form">
-      <div class="form-group">
-        <label for="username">Username</label>
-        <input type="text" id="username" name="username" class="form-control" autocomplete="username" required>
-      </div>
-      <div class="form-group">
-        <label for="password">Password</label>
-        <input type="password" id="password" name="password" class="form-control" autocomplete="current-password" required>
-      </div>
-      <button type="submit" class="btn-lcars btn-lcars-full">Sign In</button>
-    </form>
-  </div>
+            <div class="divider">or</div>
+
+            <a href="/auth/kytran/login" class="sso-btn">
+                <img src="/static/img/kytran-logo.png" alt="">
+                Connect with Kytran Empowerment
+            </a>
+        </div>
+        <div class="login-footer">
+            <a href="/">&larr; Back to C.R.E.E.D.</a>
+        </div>
+    </div>
 </div>
-{% endblock %}
+</body>
+</html>
