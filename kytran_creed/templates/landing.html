@@ -92,10 +92,10 @@
         </div>
     </div>
     <div class="stats-bar">
-        <div class="stat"><div class="stat-value">5</div><div class="stat-label">Ethical Pillars</div></div>
-        <div class="stat"><div class="stat-value">Live</div><div class="stat-label">Governance Audits</div></div>
-        <div class="stat"><div class="stat-value">Open</div><div class="stat-label">Source Framework</div></div>
-        <div class="stat"><div class="stat-value">AI</div><div class="stat-label">Ethics First</div></div>
+        <div class="stat"><div class="stat-value" id="ls-grade">—</div><div class="stat-label">Compliance Grade</div></div>
+        <div class="stat"><div class="stat-value" id="ls-events">—</div><div class="stat-label">Governance Events</div></div>
+        <div class="stat"><div class="stat-value" id="ls-agents">—</div><div class="stat-label">Active AI Agents</div></div>
+        <div class="stat"><div class="stat-value" id="ls-depts">—</div><div class="stat-label">Departments Governed</div></div>
     </div>
     <div class="features-section">
         <div class="section-title">Governance Framework</div>
@@ -167,13 +167,13 @@
         <div class="section-title">Coming Soon</div>
         <div class="section-subtitle">On the roadmap</div>
         <div class="coming-grid">
-            <div class="coming-card">
-                <div class="coming-badge">Q2 2026</div>
-                <div><h4>Public Ethics Dashboard</h4><p>Real-time transparency into platform AI governance — decisions, audits, and agent welfare scores.</p></div>
+            <div class="coming-card" style="border-color:rgba(16,185,129,0.4);opacity:1;">
+                <div class="coming-badge" style="background:rgba(16,185,129,0.15);color:#10b981;border:1px solid rgba(16,185,129,0.3);">Live ✓</div>
+                <div><h4><a href="/welfare" style="color:#10b981;text-decoration:none;">Agent Welfare &amp; Ethics</a></h4><p>Live welfare scores, stress levels, rest compliance, and ethics grade across all 17 departments.</p></div>
             </div>
-            <div class="coming-card">
-                <div class="coming-badge">Q2 2026</div>
-                <div><h4>Bias Audit Reports</h4><p>Automated bias detection across all AI agents with published findings and remediation tracking.</p></div>
+            <div class="coming-card" style="border-color:rgba(16,185,129,0.4);opacity:1;">
+                <div class="coming-badge" style="background:rgba(16,185,129,0.15);color:#10b981;border:1px solid rgba(16,185,129,0.3);">Live ✓</div>
+                <div><h4><a href="/mood-journal" style="color:#10b981;text-decoration:none;">Agent Mood Journal</a></h4><p>Per-agent welfare cards with stress, energy, mood state, and rest cycle tracking across the full fleet.</p></div>
             </div>
             <div class="coming-card">
                 <div class="coming-badge">Q3 2026</div>
@@ -184,8 +184,8 @@
                 <div><h4>Grant Applications Portal</h4><p>Apply for research funding through the C.R.E.E.D. Institute. Focus areas: fairness, explainability, safety.</p></div>
             </div>
             <div class="coming-card">
-                <div class="coming-badge">Q4 2026</div>
-                <div><h4>Agent Welfare Index</h4><p>Published welfare scores for all AI agents — stress, workload, rest cycles, and ethical constraint adherence.</p></div>
+                <div class="coming-badge">Q3 2026</div>
+                <div><h4>Bias Audit Reports</h4><p>Automated bias detection across all AI agents with published findings and remediation tracking.</p></div>
             </div>
             <div class="coming-card">
                 <div class="coming-badge">Q4 2026</div>
@@ -213,5 +213,23 @@
         &copy; 2026 Kytran Empowerment Inc. &mdash; C.R.E.E.D. Institute &mdash; Powered by A.R.C.H.I.E.
     </div>
 </div>
+<script>
+(function () {
+  fetch('/api/v1/landing-stats')
+    .then(function (r) { return r.ok ? r.json() : null; })
+    .then(function (d) {
+      if (!d) return;
+      var g = document.getElementById('ls-grade');
+      var e = document.getElementById('ls-events');
+      var a = document.getElementById('ls-agents');
+      var dep = document.getElementById('ls-depts');
+      if (g) g.textContent = d.grade || '—';
+      if (e) e.textContent = d.event_count_fmt || '—';
+      if (a) a.textContent = d.agent_count || '—';
+      if (dep) dep.textContent = d.dept_count || '—';
+    })
+    .catch(function () { /* platform unreachable — dashes stay */ });
+})();
+</script>
 </body>
 </html>

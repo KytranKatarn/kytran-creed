@@ -28,8 +28,14 @@ def generate_badge(badge_type: str, scores: dict) -> str | None:
         grade = scores["grade"]
         label = "Overall"
     else:
-        score = scores["by_category"].get(badge_type, 100.0)
-        grade = _score_to_grade(score)
+        cat_data = scores["by_category"].get(badge_type, 100.0)
+        # by_category values are now {score, events, grade} dicts; support legacy float too
+        if isinstance(cat_data, dict):
+            score = cat_data.get("score", 100.0)
+            grade = cat_data.get("grade") or _score_to_grade(score)
+        else:
+            score = cat_data
+            grade = _score_to_grade(score)
         label = badge_type.title()
     color = BADGE_COLORS.get(grade, "#6b7280")
     return BADGE_TEMPLATE.format(label=label, grade=grade, score=int(score), color=color)

@@ -32,22 +32,42 @@ def calculate_scores(events: list[dict]) -> dict:
             category_max_possible[cat] += max_weight
             category_counts[cat] += 1
 
-    by_category = {}
+    cat_scores = {}
     for cat in CATEGORIES:
         if category_max_possible[cat] > 0:
             violation_rate = category_weighted_sum[cat] / category_max_possible[cat]
             score = round(100.0 * (1.0 - violation_rate), 1)
         else:
             score = 100.0
-        by_category[cat] = score
+        cat_scores[cat] = score
 
-    active_categories = [s for c, s in by_category.items() if category_counts.get(c, 0) > 0]
+    active_categories = [s for c, s in cat_scores.items() if category_counts.get(c, 0) > 0]
     overall = round(sum(active_categories) / len(active_categories), 1) if active_categories else 100.0
 
-    grade = "F"
+    overall_grade = "F"
     for threshold, g in GRADE_THRESHOLDS:
         if overall >= threshold:
-            grade = g
+            overall_grade = g
             break
 
-    return {"overall": overall, "grade": grade, "by_category": by_category, "event_count": len(events)}
+    def _grade(score):
+        for threshold, g in GRADE_THRESHOLDS:
+            if score >= threshold:
+                return g
+        return "F"
+
+    by_category = {
+        cat: {
+            "score": cat_scores[cat],
+            "events": category_counts[cat],
+            "grade": _grade(cat_scores[cat]),
+        }
+        for cat in CATEGORIES
+    }
+
+    return {
+        "overall": overall,
+        "grade": overall_grade,
+        "by_category": by_category,
+        "event_count": len(events),
+    }
