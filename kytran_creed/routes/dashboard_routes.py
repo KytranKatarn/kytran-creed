@@ -7,7 +7,9 @@ from kytran_creed.services.platform_stats import get_platform_stats
 
 dashboard_bp = Blueprint("dashboard", __name__)
 
-_PLATFORM_BASE = os.getenv("PLATFORM_BASE_URL", "http://192.168.1.200:3000")
+# Mesh IP — canonical for inter-cluster calls from hub containers (ADR mesh routing)
+_PLATFORM_BASE = os.getenv("PLATFORM_BASE_URL", "http://100.64.0.4:3000")
+_CREED_API_BASE = f"{_PLATFORM_BASE}/tools/department-hq"
 
 
 @dashboard_bp.route("/")
@@ -45,7 +47,7 @@ def agent_welfare():
     welfare = {}
     try:
         r = requests.get(
-            f"{_PLATFORM_BASE}/api/creed/public-stats",
+            f"{_CREED_API_BASE}/api/creed/public-stats",
             timeout=8,
         )
         if r.status_code == 200:
