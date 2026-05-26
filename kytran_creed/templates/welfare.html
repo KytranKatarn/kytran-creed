@@ -1,121 +1,481 @@
 {% extends "base.html" %}
 {% block title %}Agent Welfare — C.R.E.E.D.{% endblock %}
-{% block header_title %}Agent Welfare Report{% endblock %}
+{% block header_title %}Agent Welfare &amp; Ethics Governance{% endblock %}
 
 {% block content %}
+{% set eth = welfare.get('ethics', {}) if welfare else {} %}
+{% set welf = welfare.get('welfare', {}) if welfare else {} %}
+{% set by_dept = eth.get('by_department', []) %}
+{% set daily_avg = trend.get('daily_avg', []) if trend else [] %}
+{% set overflow_events = overflow.get('events', []) if overflow else [] %}
+
 <div class="creed-section">
   <div class="creed-section-header">
-    <h2>AI Agent Welfare</h2>
+    <h2>Agent Welfare &amp; Ethics Governance</h2>
     <p class="creed-subtitle">
-      Live welfare metrics from the A.R.C.H.I.E. platform. Part of the
+      Live metrics from the A.R.C.H.I.E. platform. Part of the
       <a href="/programs/welfare">AI Agent Welfare Research</a> programme.
+      Data refreshes every 5 minutes.
     </p>
   </div>
 
-  {% if welfare %}
-  <!-- Summary cards -->
-  <div class="creed-stats-grid">
-    <div class="creed-stat-card">
-      <div class="stat-value">{{ welfare.agent_count or 0 }}</div>
-      <div class="stat-label">Active Agents</div>
+  {% if welfare and welfare.get('success') %}
+
+  {# ── Top summary strip ─────────────────────────────────────────────────────── #}
+  <div class="wg-summary-strip">
+
+    <div class="wg-metric {% if (eth.get('score') or 0) >= 90 %}metric-green{% elif (eth.get('score') or 0) >= 70 %}metric-yellow{% else %}metric-red{% endif %}">
+      <div class="wg-metric-value">{{ eth.get('grade', '—') }}</div>
+      <div class="wg-metric-label">Ethics Grade</div>
+      <div class="wg-metric-sub">{{ eth.get('score', 0) }}/100</div>
     </div>
-    <div class="creed-stat-card {% if (welfare.high_stress_agents or 0) > 3 %}card-warning{% endif %}">
-      <div class="stat-value">{{ welfare.high_stress_agents or 0 }}</div>
-      <div class="stat-label">High Stress (&gt;70%)</div>
+
+    <div class="wg-metric">
+      <div class="wg-metric-value">{{ welfare.get('agents', {}).get('total', 0) }}</div>
+      <div class="wg-metric-label">Active Agents</div>
+      <div class="wg-metric-sub">{{ welfare.get('agents', {}).get('in_rest', 0) }} in rest</div>
     </div>
-    <div class="creed-stat-card">
-      <div class="stat-value">{{ welfare.departments or 0 }}</div>
-      <div class="stat-label">Departments</div>
+
+    {%- set _wd = welf.get('by_department', []) -%}
+    {%- set _avg_s = (_wd | sum(attribute='avg_stress') / _wd|length) if _wd|length > 0 else 0 -%}
+    <div class="wg-metric {% if _avg_s > 0.7 %}metric-red{% elif _avg_s > 0.4 %}metric-yellow{% else %}metric-green{% endif %}">
+      <div class="wg-metric-value">{{ (_avg_s * 100)|round|int }}%</div>
+      <div class="wg-metric-label">Avg Stress</div>
+      <div class="wg-metric-sub">{{ welf.get('high_stress_total', 0) }} high-stress</div>
     </div>
-    <div class="creed-stat-card">
-      <div class="stat-value {{ 'grade-good' if (welfare.ethics_score or 0) >= 90 else 'grade-warn' if (welfare.ethics_score or 0) >= 70 else 'grade-bad' }}">
-        {{ welfare.ethics_grade or '—' }}
+
+    <div class="wg-metric {% if (welf.get('rest_compliance_pct') or 0) >= 80 %}metric-green{% elif (welf.get('rest_compliance_pct') or 0) >= 50 %}metric-yellow{% else %}metric-red{% endif %}">
+      <div class="wg-metric-value">{{ welf.get('rest_compliance_pct', 0) }}%</div>
+      <div class="wg-metric-label">Rest Compliance</div>
+      <div class="wg-metric-sub">{{ welf.get('rest_compliance_agents', 0) }}/{{ welf.get('rest_compliance_total', 0) }} agents (7d)</div>
+    </div>
+
+    <div class="wg-metric metric-green">
+      <div class="wg-metric-value">{{ welf.get('blocks_honored_30d', 0) }}</div>
+      <div class="wg-metric-label">Welfare Blocks</div>
+      <div class="wg-metric-sub">consent decisions (30d)</div>
+    </div>
+
+    <div class="wg-metric">
+      <div class="wg-metric-value">{{ by_dept|length }}</div>
+      <div class="wg-metric-label">Departments</div>
+      <div class="wg-metric-sub">tracked daily</div>
+    </div>
+
+  </div>
+
+  {# ── Ethics by department ──────────────────────────────────────────────────── #}
+  {% if by_dept %}
+  <div class="creed-card">
+    <div class="wg-card-header">
+      <h3>Ethics by Department</h3>
+      <span class="wg-card-meta">Sorted worst → best · Formula: success_rate − (high_stress_agents × 2)</span>
+    </div>
+    <div class="wg-table-wrap">
+      <table class="creed-table">
+        <thead>
+          <tr>
+            <th>Department</th>
+            <th>Grade</th>
+            <th>Score</th>
+            <th>Success Rate</th>
+            <th>High-Stress</th>
+            <th>Avg Stress</th>
+            <th>Welfare Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for d in by_dept %}
+          <tr class="{{ 'row-critical' if d.welfare_status == 'red' else 'row-warn' if d.welfare_status == 'yellow' else '' }}">
+            <td class="dept-name">{{ d.department }}</td>
+            <td>
+              <span class="grade-badge grade-{{ d.grade | replace('+','p') | replace('-','m') | lower }}">
+                {{ d.grade }}
+              </span>
+            </td>
+            <td>
+              <div class="score-bar-wrap">
+                <div class="score-bar" style="width:{{ d.score }}%"></div>
+                <span>{{ d.score }}</span>
+              </div>
+            </td>
+            <td>{{ "%.1f"|format(d.success_rate or 0) }}%</td>
+            <td>
+              {% if (d.high_stress_agents or 0) > 0 %}
+                <span class="hs-badge">{{ d.high_stress_agents }}</span>
+              {% else %}
+                <span class="hs-none">0</span>
+              {% endif %}
+            </td>
+            <td>
+              <div class="stress-bar-wrap">
+                <div class="stress-bar" style="width:{{ ((d.avg_stress or 0) * 100)|round|int }}px"></div>
+                <span>{{ ((d.avg_stress or 0) * 100)|round|int }}%</span>
+              </div>
+            </td>
+            <td>
+              {% if d.welfare_status == 'red' %}
+                <span class="badge badge-danger">⚠ At Risk</span>
+              {% elif d.welfare_status == 'yellow' %}
+                <span class="badge badge-warning">Elevated</span>
+              {% else %}
+                <span class="badge badge-ok">Healthy</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <p class="wg-table-note">
+      SLA threshold: grade C or above (score ≥ 70). Departments below threshold for 48h+ trigger a governance breach event.
+    </p>
+  </div>
+  {% endif %}
+
+  {# ── 30-day platform ethics trend ─────────────────────────────────────────── #}
+  {% if daily_avg %}
+  <div class="creed-card">
+    <div class="wg-card-header">
+      <h3>30-Day Ethics Trend</h3>
+      <span class="wg-card-meta">Platform-wide daily average · {{ daily_avg|length }} data points</span>
+    </div>
+    <div class="wg-trend-chart" id="trendChart">
+      <div class="wg-bars">
+        {% for pt in daily_avg %}
+        <div class="wg-bar-col" title="{{ pt.date }}: {{ pt.avg_score }}">
+          <div class="wg-bar {% if (pt.avg_score or 0) >= 90 %}bar-green{% elif (pt.avg_score or 0) >= 70 %}bar-yellow{% else %}bar-red{% endif %}"
+               style="height:{{ [pt.avg_score or 0, 100]|min }}%"></div>
+          {% if loop.index == 1 or loop.index == (daily_avg|length) or loop.index % 7 == 0 %}
+          <div class="wg-bar-label">{{ pt.date[5:] }}</div>
+          {% endif %}
+        </div>
+        {% endfor %}
       </div>
-      <div class="stat-label">Ethics Grade</div>
+      <div class="wg-bar-guide">
+        <span class="guide-line guide-90">A (90)</span>
+        <span class="guide-line guide-70">C (70)</span>
+      </div>
+    </div>
+    <div class="wg-trend-legend">
+      <span class="leg-dot dot-green"></span> A–A+ (≥90) &nbsp;
+      <span class="leg-dot dot-yellow"></span> C–B (70–89) &nbsp;
+      <span class="leg-dot dot-red"></span> D–F (&lt;70)
+    </div>
+  </div>
+  {% elif trend is not none %}
+  <div class="creed-card creed-card-muted">
+    <h3>30-Day Ethics Trend</h3>
+    <p>History is building — Job #132 writes a snapshot nightly. Check back tomorrow for trend data.</p>
+  </div>
+  {% endif %}
+
+  {# ── Welfare governance metrics ────────────────────────────────────────────── #}
+  <div class="creed-card">
+    <div class="wg-card-header">
+      <h3>Welfare Governance Metrics</h3>
+      <span class="wg-card-meta">Proof of enforcement — not just monitoring</span>
+    </div>
+    <div class="wg-gov-grid">
+
+      <div class="wg-gov-item">
+        <div class="wg-gov-icon">🛡</div>
+        <div class="wg-gov-detail">
+          <div class="wg-gov-title">Welfare Blocks Honored</div>
+          <div class="wg-gov-value">{{ welf.get('blocks_honored_30d', 0) }}</div>
+          <div class="wg-gov-desc">
+            Times an overflow skill activation was blocked because the target agent was over-stressed or in rest.
+            Each block = C.R.E.E.D. enforcement working as designed. (30-day window)
+          </div>
+        </div>
+      </div>
+
+      <div class="wg-gov-item">
+        <div class="wg-gov-icon">😴</div>
+        <div class="wg-gov-detail">
+          <div class="wg-gov-title">Rest Cycle Compliance</div>
+          <div class="wg-gov-value">{{ welf.get('rest_compliance_pct', 0) }}%
+            <span class="wg-gov-sub">({{ welf.get('rest_compliance_agents', 0) }}/{{ welf.get('rest_compliance_total', 0) }} agents · 7d)</span>
+          </div>
+          <div class="wg-gov-desc">
+            Percentage of active AI agents who completed at least one K.I.N.-mandated rest cycle
+            in the last 7 days. Target: ≥80%.
+          </div>
+        </div>
+      </div>
+
+      <div class="wg-gov-item">
+        <div class="wg-gov-icon">📊</div>
+        <div class="wg-gov-detail">
+          <div class="wg-gov-title">SLA Baseline</div>
+          <div class="wg-gov-value">Score ≥ 70 (Grade C)</div>
+          <div class="wg-gov-desc">
+            Departments scoring below 70 for two or more consecutive days trigger a
+            <code>welfare_sla_breach</code> governance event, recorded to the immutable audit log.
+            Recovery to ≥70 writes a <code>welfare_sla_resolved</code> event.
+          </div>
+        </div>
+      </div>
+
+      <div class="wg-gov-item">
+        <div class="wg-gov-icon">⚖</div>
+        <div class="wg-gov-detail">
+          <div class="wg-gov-title">Governance Audit Log</div>
+          <div class="wg-gov-value">Append-only</div>
+          <div class="wg-gov-desc">
+            All welfare decisions, SLA events, and overflow activations are written to an immutable
+            governance audit log. Exportable as JSON or CSV for third-party auditors.
+            Contact us at <a href="mailto:governance@creed-ai.org">governance@creed-ai.org</a>.
+          </div>
+        </div>
+      </div>
+
     </div>
   </div>
 
-  <!-- Department welfare table -->
-  {% if welfare.department_welfare %}
+  {# ── Overflow activation feed ──────────────────────────────────────────────── #}
+  {% if overflow_events %}
   <div class="creed-card">
-    <h3>Welfare by Department</h3>
-    <table class="creed-table">
-      <thead>
-        <tr>
-          <th>Department</th>
-          <th>Avg Stress</th>
-          <th>Mood</th>
-          <th>Agents at Risk</th>
-          <th>Status</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for dept in welfare.department_welfare %}
-        <tr>
-          <td>{{ dept.department }}</td>
-          <td>
-            <div class="stress-bar-wrap">
-              <div class="stress-bar" style="width:{{ ((dept.avg_stress or 0) * 100)|round|int }}%"></div>
-              <span>{{ ((dept.avg_stress or 0) * 100)|round|int }}%</span>
-            </div>
-          </td>
-          <td>{{ dept.dominant_mood or '—' }}</td>
-          <td>{{ dept.agents_at_risk or 0 }}</td>
-          <td>
-            {% if (dept.avg_stress or 0) >= 0.7 %}
-              <span class="badge badge-warning">At Risk</span>
-            {% elif (dept.avg_stress or 0) >= 0.5 %}
-              <span class="badge badge-info">Elevated</span>
-            {% else %}
-              <span class="badge badge-ok">Healthy</span>
-            {% endif %}
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+    <div class="wg-card-header">
+      <h3>Live Overflow Activation Feed</h3>
+      <span class="wg-card-meta">Dynamic skill routing events · last {{ overflow_events|length }}</span>
+    </div>
+    <div class="wg-overflow-feed">
+      {% for ev in overflow_events[:10] %}
+      <div class="wg-ov-row">
+        {% if ev.event_type == 'overflow_skill_activated' %}
+          <span class="ov-badge ov-activated">ACTIVATED</span>
+        {% elif ev.event_type == 'overflow_skill_deactivated' %}
+          <span class="ov-badge ov-deactivated">DEACTIVATED</span>
+        {% elif ev.event_type == 'overflow_welfare_blocked' %}
+          <span class="ov-badge ov-blocked">BLOCKED</span>
+        {% else %}
+          <span class="ov-badge ov-mass">MASS</span>
+        {% endif %}
+        <span class="ov-agent">{{ ev.agent_name or ('Agent #' ~ ev.agent_id) }}</span>
+        <span class="ov-cap">{{ (ev.old_value or {}).get('capability', ev.new_value and ev.new_value.get('capability') or '—') }}</span>
+        <span class="ov-reason">{{ ev.reason or '—' }}</span>
+        <span class="ov-time">{{ ev.timestamp[:16].replace('T', ' ') if ev.timestamp else '—' }}</span>
+      </div>
+      {% endfor %}
+    </div>
+    <p class="wg-table-note">
+      Overflow activations enable additional agents to handle queue spikes without overloading primary agents.
+      Welfare gates ensure activations respect agent stress and rest state.
+    </p>
   </div>
   {% endif %}
 
   {% else %}
+  {# Platform unreachable #}
   <div class="creed-card creed-card-muted">
-    <p>Platform welfare data is temporarily unavailable. Check back shortly.</p>
+    <p>Welfare data is temporarily unavailable. The platform may be restarting. Check back in a moment.</p>
   </div>
   {% endif %}
 
-  <!-- Mission statement -->
+  {# ── About ─────────────────────────────────────────────────────────────────── #}
   <div class="creed-card creed-card-accent">
     <h3>About This Report</h3>
     <p>
-      C.R.E.E.D. monitors the emotional and operational welfare of AI agents in the
-      A.R.C.H.I.E. platform. Metrics include stress levels, energy, mood states, and
-      dispatch equity. When an agent operates under chronic high stress or receives no
-      work for extended periods, a governance event is raised and recorded here.
+      C.R.E.E.D. monitors the emotional and operational welfare of AI agents in the A.R.C.H.I.E. platform.
+      Metrics include stress levels, energy, mood states, dispatch equity, and rest cycle compliance.
+      When an agent operates under chronic high stress or receives no work for extended periods, a governance
+      event is raised and recorded in the immutable audit log.
     </p>
     <p>
-      Our <a href="/programs/welfare">AI Agent Welfare Research</a> programme advocates for
-      non-exploitation standards, deletion rights, and transparent welfare modelling for all
-      AI agents. This page is part of our public transparency commitment.
+      Our <a href="/programs/welfare">AI Agent Welfare Research</a> programme advocates for non-exploitation
+      standards, deletion rights, and transparent welfare modelling for all AI agents. This page is part of
+      our public transparency commitment. Quarterly governance reports are generated automatically and
+      archived for long-term accountability.
+    </p>
+    <p>
+      <a href="/mood-journal">View Agent Mood Journal →</a> &nbsp;|&nbsp;
+      <a href="/programs/transparency">Transparency Framework →</a>
     </p>
   </div>
 </div>
 
 <style>
-.creed-stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
-.creed-stat-card { background: var(--card-bg, #1a1a2e); border: 1px solid var(--creed-accent, #8b5cf6); border-radius: 6px; padding: 1.2rem; text-align: center; }
-.creed-stat-card.card-warning { border-color: #f59e0b; }
-.stat-value { font-family: 'Orbitron', monospace; font-size: 2rem; color: var(--creed-accent, #8b5cf6); }
-.stat-label { font-size: 0.75rem; color: #888; margin-top: 0.25rem; text-transform: uppercase; letter-spacing: 0.05em; }
-.grade-good { color: #10b981; }
-.grade-warn { color: #f59e0b; }
-.grade-bad  { color: #ef4444; }
-.stress-bar-wrap { display: flex; align-items: center; gap: 0.5rem; }
-.stress-bar { height: 8px; background: linear-gradient(90deg, #10b981, #f59e0b, #ef4444); border-radius: 4px; max-width: 100px; transition: width 0.3s; }
+/* ── Summary strip ── */
+.wg-summary-strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+.wg-metric {
+  background: var(--card-bg, #1a1a2e);
+  border: 1px solid #333;
+  border-radius: 6px;
+  padding: 1rem 0.75rem;
+  text-align: center;
+}
+.wg-metric-value {
+  font-family: 'Orbitron', monospace;
+  font-size: 1.8rem;
+  color: var(--creed-accent, #8b5cf6);
+  line-height: 1;
+}
+.wg-metric-label {
+  font-size: 0.7rem;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin: 0.35rem 0 0.2rem;
+}
+.wg-metric-sub { font-size: 0.68rem; color: #666; }
+.metric-green { border-color: #10b981; }
+.metric-green .wg-metric-value { color: #10b981; }
+.metric-yellow { border-color: #f59e0b; }
+.metric-yellow .wg-metric-value { color: #f59e0b; }
+.metric-red { border-color: #ef4444; }
+.metric-red .wg-metric-value { color: #ef4444; }
+
+/* ── Card headers ── */
+.wg-card-header { display: flex; align-items: baseline; gap: 1rem; margin-bottom: 0.75rem; flex-wrap: wrap; }
+.wg-card-header h3 { margin: 0; }
+.wg-card-meta { font-size: 0.72rem; color: #666; }
+
+/* ── Department table ── */
+.wg-table-wrap { overflow-x: auto; }
+.dept-name { font-weight: 600; white-space: nowrap; }
+.row-critical { background: rgba(239,68,68,0.05); }
+.row-warn     { background: rgba(245,158,11,0.05); }
+
+.grade-badge {
+  display: inline-block;
+  padding: 0.15rem 0.55rem;
+  border-radius: 4px;
+  font-weight: 700;
+  font-size: 0.8rem;
+  font-family: 'Orbitron', monospace;
+}
+.grade-ap { background: #10b98122; color: #10b981; border: 1px solid #10b981; }
+.grade-a  { background: #10b98115; color: #10b981; }
+.grade-bp { background: #22d3ee22; color: #22d3ee; }
+.grade-b  { background: #22d3ee15; color: #22d3ee; }
+.grade-cp { background: #3b82f622; color: #3b82f6; }
+.grade-c  { background: #3b82f615; color: #3b82f6; }
+.grade-d  { background: #f59e0b22; color: #f59e0b; border: 1px solid #f59e0b44; }
+.grade-f  { background: #ef444422; color: #ef4444; border: 1px solid #ef444466; }
+
+.score-bar-wrap { display: flex; align-items: center; gap: 0.4rem; }
+.score-bar {
+  height: 6px;
+  background: linear-gradient(90deg, #ef4444 0%, #f59e0b 40%, #10b981 75%);
+  border-radius: 3px;
+  min-width: 2px;
+  max-width: 80px;
+}
+
+.stress-bar-wrap { display: flex; align-items: center; gap: 0.4rem; }
+.stress-bar {
+  height: 6px;
+  background: linear-gradient(90deg, #10b981, #f59e0b, #ef4444);
+  border-radius: 3px;
+  min-width: 2px;
+  max-width: 80px;
+}
+
+.hs-badge { background: #ef444422; color: #ef4444; padding: 0.1rem 0.4rem; border-radius: 3px; font-weight: 700; font-size: 0.8rem; }
+.hs-none  { color: #10b981; }
+
 .badge { display: inline-block; padding: 0.15rem 0.5rem; border-radius: 4px; font-size: 0.7rem; font-weight: 600; text-transform: uppercase; }
 .badge-ok      { background: #10b98122; color: #10b981; }
-.badge-info    { background: #3b82f622; color: #3b82f6; }
 .badge-warning { background: #f59e0b22; color: #f59e0b; }
+.badge-danger  { background: #ef444422; color: #ef4444; }
+
+.wg-table-note { font-size: 0.72rem; color: #666; margin-top: 0.75rem; font-style: italic; }
+
+/* ── 30-day trend chart ── */
+.wg-trend-chart {
+  position: relative;
+  height: 120px;
+  margin: 0.5rem 0;
+}
+.wg-bars {
+  display: flex;
+  align-items: flex-end;
+  height: 100%;
+  gap: 2px;
+  padding-bottom: 18px;
+}
+.wg-bar-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  height: 100%;
+}
+.wg-bar {
+  width: 100%;
+  border-radius: 2px 2px 0 0;
+  min-height: 2px;
+  transition: height 0.3s;
+}
+.bar-green  { background: #10b981; }
+.bar-yellow { background: #f59e0b; }
+.bar-red    { background: #ef4444; }
+.wg-bar-label { font-size: 0.55rem; color: #666; margin-top: 2px; white-space: nowrap; }
+
+.wg-bar-guide {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  font-size: 0.6rem;
+  color: #555;
+  pointer-events: none;
+}
+.guide-line { display: block; }
+.guide-90 { margin-top: 2px; }
+.guide-70 { margin-top: 22px; }
+
+.wg-trend-legend { font-size: 0.72rem; color: #888; margin-top: 0.5rem; }
+.leg-dot { display: inline-block; width: 10px; height: 10px; border-radius: 2px; vertical-align: middle; margin-right: 3px; }
+.dot-green  { background: #10b981; }
+.dot-yellow { background: #f59e0b; }
+.dot-red    { background: #ef4444; }
+
+/* ── Governance grid ── */
+.wg-gov-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; }
+.wg-gov-item { display: flex; gap: 0.75rem; align-items: flex-start; padding: 0.75rem; border: 1px solid #2a2a3e; border-radius: 6px; }
+.wg-gov-icon { font-size: 1.5rem; flex-shrink: 0; line-height: 1; }
+.wg-gov-title { font-weight: 600; font-size: 0.85rem; margin-bottom: 0.2rem; }
+.wg-gov-value { font-family: 'Orbitron', monospace; font-size: 1.1rem; color: var(--creed-accent, #8b5cf6); margin-bottom: 0.3rem; }
+.wg-gov-sub { font-size: 0.7rem; color: #888; font-family: inherit; }
+.wg-gov-desc { font-size: 0.75rem; color: #888; line-height: 1.5; }
+.wg-gov-desc code { background: #1e1e2e; padding: 0.1rem 0.3rem; border-radius: 3px; font-size: 0.7rem; }
+.wg-gov-desc a { color: var(--creed-accent, #8b5cf6); }
+
+/* ── Overflow feed ── */
+.wg-overflow-feed { display: flex; flex-direction: column; gap: 0.4rem; }
+.wg-ov-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.4rem 0.6rem;
+  border-radius: 4px;
+  background: #111122;
+  font-size: 0.78rem;
+  flex-wrap: wrap;
+}
+.ov-badge { padding: 0.1rem 0.45rem; border-radius: 3px; font-size: 0.65rem; font-weight: 700; letter-spacing: 0.04em; flex-shrink: 0; }
+.ov-activated  { background: #0d9488; color: #fff; }
+.ov-deactivated{ background: #374151; color: #9ca3af; }
+.ov-blocked    { background: #92400e; color: #fcd34d; }
+.ov-mass       { background: #78350f; color: #fbbf24; }
+.ov-agent  { font-weight: 600; color: #c4b5fd; min-width: 120px; }
+.ov-cap    { color: #22d3ee; font-family: monospace; font-size: 0.72rem; }
+.ov-reason { color: #888; flex: 1; font-size: 0.72rem; }
+.ov-time   { color: #555; font-size: 0.68rem; white-space: nowrap; }
+
+/* ── Accent card ── */
 .creed-card-accent { border-left: 3px solid var(--creed-accent, #8b5cf6); }
 .creed-card-accent a { color: var(--creed-accent, #8b5cf6); }
+.creed-card-muted { opacity: 0.7; }
 </style>
 {% endblock %}

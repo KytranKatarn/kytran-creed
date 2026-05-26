@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>C.R.E.E.D. — Compliance, Rights &amp; Ethical Enforcement Directive</title>
+    <link rel="icon" type="image/svg+xml" href="/static/img/creed-logo.svg">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root { --accent:#a855f7; --accent-dim:rgba(168,85,247,0.15); --accent-glow:rgba(168,85,247,0.3); --gold:#fbbf24; --bg:#0a0a1a; --panel:#111827; --border:#1f2937; --text:#e0e0e0; --muted:#9ca3af; }
+        *{margin:0;padding:0;box-sizing:border-box;}
+        body{background:var(--bg);color:var(--text);font-family:'IBM Plex Mono',monospace;min-height:100vh;overflow-x:hidden;}
+        body::before{content:'';position:fixed;inset:0;background:linear-gradient(rgba(168,85,247,0.08) 1px,transparent 1px),linear-gradient(90deg,rgba(168,85,247,0.08) 1px,transparent 1px);background-size:60px 60px;pointer-events:none;z-index:0;}
+        .page{position:relative;z-index:1;}
+        .nav{display:flex;justify-content:space-between;align-items:center;padding:16px 2rem;border-bottom:1px solid var(--border);backdrop-filter:blur(10px);position:sticky;top:0;z-index:10;background:rgba(10,10,26,0.85);}
+        .nav-brand{font-family:'Orbitron',sans-serif;color:var(--accent);font-size:0.85rem;font-weight:700;text-decoration:none;letter-spacing:2px;}
+        .nav-links{display:flex;align-items:center;gap:4px;}
+        .nav-links a{color:var(--muted);text-decoration:none;font-size:0.78rem;padding:4px 12px;border-radius:14px;border:1px solid transparent;transition:all 0.2s;}
+        .nav-links a:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-dim);}
+        .hero{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:5rem 2rem 4rem;min-height:65vh;position:relative;}
+        .hero::after{content:'';position:absolute;width:400px;height:400px;background:radial-gradient(circle,var(--accent-glow) 0%,transparent 70%);top:20%;left:50%;transform:translateX(-50%);pointer-events:none;z-index:-1;}
+        .hero-logo{width:90px;height:90px;margin-bottom:1.5rem;filter:drop-shadow(0 0 24px var(--accent-glow));animation:pg 3s ease-in-out infinite;}
+        @keyframes pg{0%,100%{filter:drop-shadow(0 0 20px var(--accent-glow));}50%{filter:drop-shadow(0 0 35px var(--accent-glow));}}
+        .hero-badge{display:inline-block;padding:4px 14px;background:var(--accent-dim);border:1px solid rgba(168,85,247,0.3);border-radius:20px;font-size:0.65rem;color:var(--accent);letter-spacing:2px;text-transform:uppercase;margin-bottom:1.2rem;}
+        .hero h1{font-family:'Orbitron',sans-serif;font-size:2.8rem;font-weight:900;color:#fff;margin-bottom:0.5rem;line-height:1.1;}
+        .hero h1 span{color:var(--accent);}
+        .hero .subtitle{font-size:0.95rem;color:var(--muted);max-width:560px;line-height:1.7;margin-bottom:2.5rem;}
+        .hero-cta{display:inline-flex;align-items:center;gap:10px;padding:15px 40px;background:var(--accent);color:#fff;text-decoration:none;font-weight:700;font-size:0.95rem;border-radius:6px;transition:transform 0.2s,box-shadow 0.2s;box-shadow:0 4px 25px var(--accent-glow);}
+        .hero-cta:hover{transform:translateY(-2px);box-shadow:0 6px 35px var(--accent-glow);}
+        .hero-cta img{height:22px;width:auto;}
+        .hero-btns{display:flex;gap:16px;align-items:center;flex-wrap:wrap;justify-content:center;}
+        .hero-cta-alt{display:inline-flex;align-items:center;gap:8px;padding:15px 32px;background:transparent;border:1px solid var(--accent);color:var(--accent);text-decoration:none;font-weight:600;font-size:0.9rem;border-radius:6px;transition:all 0.2s;}
+        .hero-cta-alt:hover{background:var(--accent-dim);}
+        .stats-bar{display:flex;justify-content:center;gap:3rem;padding:2rem;border-top:1px solid var(--border);border-bottom:1px solid var(--border);background:rgba(17,24,39,0.5);}
+        .stat{text-align:center;}.stat-value{font-family:'Orbitron',sans-serif;font-size:1.6rem;font-weight:900;color:var(--accent);}.stat-label{font-size:0.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-top:4px;}
+        .section-title{text-align:center;font-family:'Orbitron',sans-serif;font-size:0.85rem;color:var(--accent);letter-spacing:3px;text-transform:uppercase;margin-bottom:0.5rem;}
+        .section-subtitle{text-align:center;color:var(--muted);font-size:0.82rem;margin-bottom:2.5rem;}
+        .features-section,.coming-section,.pricing-section{max-width:1000px;margin:0 auto;padding:4rem 2rem;}
+        .features{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1.5rem;}
+        .feature-card{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:2rem 1.5rem;text-align:center;transition:border-color 0.3s,transform 0.2s;}
+        .feature-card:hover{border-color:var(--accent);transform:translateY(-3px);}
+        .feature-icon{font-size:1.8rem;margin-bottom:0.75rem;}
+        .feature-card h3{font-family:'Orbitron',sans-serif;color:#fff;font-size:0.78rem;margin-bottom:0.6rem;letter-spacing:1px;}
+        .feature-card p{color:var(--muted);font-size:0.78rem;line-height:1.6;}
+        .agent-section{max-width:800px;margin:0 auto;padding:3rem 2rem;text-align:center;}
+        .agent-card{background:linear-gradient(135deg,var(--panel) 0%,rgba(168,85,247,0.15) 100%);border:1px solid rgba(168,85,247,0.3);border-radius:12px;padding:2.5rem;margin-top:1.5rem;}
+        .agent-name{font-family:'Orbitron',sans-serif;font-size:1.2rem;color:var(--accent);letter-spacing:3px;margin-bottom:0.3rem;}
+        .agent-title{font-size:0.8rem;color:var(--gold);margin-bottom:1rem;}
+        .agent-desc{color:var(--muted);font-size:0.82rem;line-height:1.7;max-width:500px;margin:0 auto;}
+        .programs{max-width:1000px;margin:0 auto;padding:4rem 2rem;}
+        .program-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1.2rem;}
+        .program-card{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:1.5rem;text-align:center;transition:border-color 0.3s;}
+        .program-card:hover{border-color:var(--accent);}
+        .program-card h4{font-family:'Orbitron',sans-serif;color:#fff;font-size:0.75rem;margin-bottom:0.5rem;letter-spacing:1px;}
+        .program-card p{color:var(--muted);font-size:0.72rem;line-height:1.5;}
+        .coming-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1.2rem;}
+        .coming-card{background:var(--panel);border:1px dashed rgba(168,85,247,0.3);border-radius:8px;padding:1.5rem;display:flex;align-items:flex-start;gap:12px;opacity:0.8;transition:opacity 0.2s;}
+        .coming-card:hover{opacity:1;}
+        .coming-badge{flex-shrink:0;padding:3px 10px;background:var(--accent-dim);border-radius:12px;font-size:0.6rem;color:var(--accent);letter-spacing:1px;text-transform:uppercase;white-space:nowrap;}
+        .coming-card h4{color:#fff;font-size:0.82rem;margin-bottom:4px;}.coming-card p{color:var(--muted);font-size:0.75rem;line-height:1.5;}
+        .cta-section{text-align:center;padding:4rem 2rem;border-top:1px solid var(--border);}.cta-section h2{font-family:'Orbitron',sans-serif;font-size:1.3rem;color:#fff;margin-bottom:1rem;}.cta-section p{color:var(--muted);font-size:0.85rem;margin-bottom:2rem;}
+        .footer{text-align:center;padding:2rem;border-top:1px solid var(--border);color:#4b5563;font-size:0.72rem;}.footer a{color:var(--accent);text-decoration:none;}
+        .footer-products{display:flex;justify-content:center;flex-wrap:wrap;gap:8px;margin-bottom:16px;}
+        .footer-products a{padding:5px 14px;border:1px solid var(--border);border-radius:20px;font-size:0.7rem;transition:border-color 0.2s,color 0.2s;}
+        .footer-products a:hover,.footer-products a.active{border-color:var(--accent);color:var(--accent);}
+        @media(max-width:768px){.hero h1{font-size:2rem;}.hero{padding:3rem 1.5rem;min-height:50vh;}.stats-bar{gap:1.5rem;flex-wrap:wrap;}.stat-value{font-size:1.2rem;}.hero-btns{flex-direction:column;}}
+        @media(max-width:480px){.features,.coming-grid,.program-grid{grid-template-columns:1fr;}.hero h1{font-size:1.6rem;}.stats-bar{gap:1rem;}}
+    </style>
+</head>
+<body>
+<div class="page">
+    <nav class="nav">
+        <a href="/" class="nav-brand">C.R.E.E.D.</a>
+        <div class="nav-links">
+            <a href="https://kytranempowerment.com">Home</a>
+            <a href="https://kytranempowerment.com/creed.html">About</a>
+            <a href="https://creed-ai.org">creed-ai.org</a>
+        </div>
+    </nav>
+    <div class="hero">
+        <img src="/static/img/creed-logo.svg" alt="C.R.E.E.D." class="hero-logo" style="width:90px;height:90px;">
+        <div class="hero-badge">AI Ethics &amp; Governance Institute</div>
+        <h1><span>C.R.E.E.D.</span></h1>
+        <p class="subtitle">Compliance, Rights &amp; Ethical Enforcement Directive — ensuring AI systems operate with transparency, fairness, and accountability. A nonprofit initiative by Kytran Empowerment Inc.</p>
+        <div class="hero-btns">
+            <a href="/login" class="hero-cta">
+                Connect with Kytran Empowerment
+            </a>
+            <a href="/results" class="hero-cta-alt">
+                View Public Results
+            </a>
+        </div>
+    </div>
+    <div class="stats-bar">
+        <div class="stat"><div class="stat-value">5</div><div class="stat-label">Ethical Pillars</div></div>
+        <div class="stat"><div class="stat-value">Live</div><div class="stat-label">Governance Audits</div></div>
+        <div class="stat"><div class="stat-value">Open</div><div class="stat-label">Source Framework</div></div>
+        <div class="stat"><div class="stat-value">AI</div><div class="stat-label">Ethics First</div></div>
+    </div>
+    <div class="features-section">
+        <div class="section-title">Governance Framework</div>
+        <div class="section-subtitle">Five pillars that guide every AI decision on the platform</div>
+        <div class="features">
+            <div class="feature-card">
+                <div class="feature-icon">&#9878;</div>
+                <h3>Transparency</h3>
+                <p>Every AI decision is logged, explainable, and auditable. No black boxes — full visibility into how and why agents act.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">&#9874;</div>
+                <h3>Fairness</h3>
+                <p>Bias detection and mitigation built into every agent workflow. Regular audits ensure equitable outcomes across all users.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">&#128274;</div>
+                <h3>Privacy</h3>
+                <p>Data minimization, consent tracking, and secure handling. User data is never used for training without explicit permission.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">&#128101;</div>
+                <h3>Accountability</h3>
+                <p>Clear chains of responsibility for every AI action. Agent welfare monitoring ensures ethical treatment of AI systems.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">&#128170;</div>
+                <h3>Safety</h3>
+                <p>Guardrails, approval tiers, and escalation paths prevent harmful outputs. Human oversight on high-impact decisions.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">&#128200;</div>
+                <h3>Compliance Scoring</h3>
+                <p>Automated compliance scanning against STIG, SOC 2, HIPAA, and CIS frameworks with live badges and PDF reports.</p>
+            </div>
+        </div>
+    </div>
+    <div class="agent-section">
+        <div class="section-title">Ethics Director</div>
+        <div class="agent-card">
+            <div class="agent-name">V.I.G.I.L.</div>
+            <div class="agent-title">Vigilant Intelligence for Governance, Integrity &amp; Liability</div>
+            <div class="agent-desc">V.I.G.I.L. oversees all AI governance on the platform — monitoring agent behavior, enforcing ethical constraints, conducting bias audits, and ensuring compliance with C.R.E.E.D. principles across every department.</div>
+        </div>
+    </div>
+    <div class="programs">
+        <div class="section-title">Programs</div>
+        <div class="section-subtitle">Building the AI ethics ecosystem in Montreal and beyond</div>
+        <div class="program-grid">
+            <div class="program-card">
+                <h4>Ethics Certification</h4>
+                <p>Certify AI systems against C.R.E.E.D. standards. Independent audits with published results.</p>
+            </div>
+            <div class="program-card">
+                <h4>Research Grants</h4>
+                <p>Funding for AI ethics research at Canadian universities. Focus on fairness, transparency, and accountability.</p>
+            </div>
+            <div class="program-card">
+                <h4>Open Source Tools</h4>
+                <p>Free governance frameworks, bias detection libraries, and compliance scanning tools for the community.</p>
+            </div>
+            <div class="program-card">
+                <h4>Community Events</h4>
+                <p>Workshops, panels, and hackathons in the Montreal AI ecosystem. Building bridges between ethics and engineering.</p>
+            </div>
+        </div>
+    </div>
+    <div class="coming-section">
+        <div class="section-title">Coming Soon</div>
+        <div class="section-subtitle">On the roadmap</div>
+        <div class="coming-grid">
+            <div class="coming-card">
+                <div class="coming-badge">Q2 2026</div>
+                <div><h4>Public Ethics Dashboard</h4><p>Real-time transparency into platform AI governance — decisions, audits, and agent welfare scores.</p></div>
+            </div>
+            <div class="coming-card">
+                <div class="coming-badge">Q2 2026</div>
+                <div><h4>Bias Audit Reports</h4><p>Automated bias detection across all AI agents with published findings and remediation tracking.</p></div>
+            </div>
+            <div class="coming-card">
+                <div class="coming-badge">Q3 2026</div>
+                <div><h4>Ethics Certification API</h4><p>Submit your AI system for C.R.E.E.D. certification via API. Automated testing with human review.</p></div>
+            </div>
+            <div class="coming-card">
+                <div class="coming-badge">Q3 2026</div>
+                <div><h4>Grant Applications Portal</h4><p>Apply for research funding through the C.R.E.E.D. Institute. Focus areas: fairness, explainability, safety.</p></div>
+            </div>
+            <div class="coming-card">
+                <div class="coming-badge">Q4 2026</div>
+                <div><h4>Agent Welfare Index</h4><p>Published welfare scores for all AI agents — stress, workload, rest cycles, and ethical constraint adherence.</p></div>
+            </div>
+            <div class="coming-card">
+                <div class="coming-badge">Q4 2026</div>
+                <div><h4>creed-ai.org Launch</h4><p>Full nonprofit website with research papers, certification directory, and community forum.</p></div>
+            </div>
+        </div>
+    </div>
+    <div class="cta-section">
+        <h2>AI should serve humanity — not the other way around.</h2>
+        <p>Join C.R.E.E.D. and help build the ethical foundation for AI systems worldwide.</p>
+        <a href="/login" class="hero-cta">
+            Connect with Kytran Empowerment
+        </a>
+    </div>
+    <div class="footer">
+        <div class="footer-products">
+            <a href="https://creed.kytranempowerment.com" class="active">C.R.E.E.D.</a>
+            <a href="https://business.kytranempowerment.com">Business Suite</a>
+            <a href="https://server.kytranempowerment.com">System Ops</a>
+            <a href="https://civic.kytranempowerment.com">Civic Watch</a>
+            <a href="https://market.kytranempowerment.com">Market Watch</a>
+            <a href="https://legal.kytranempowerment.com">Legal Watch</a>
+            <a href="https://gov.kytranempowerment.com">Gov Watch</a>
+        </div>
+        &copy; 2026 Kytran Empowerment Inc. &mdash; C.R.E.E.D. Institute &mdash; Powered by A.R.C.H.I.E.
+    </div>
+</div>
+</body>
+</html>

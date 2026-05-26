@@ -3,7 +3,13 @@ import requests
 from flask import Blueprint, render_template, jsonify, redirect, url_for
 from flask_login import current_user, login_required
 
-from kytran_creed.services.platform_stats import get_platform_stats
+from kytran_creed.services.platform_stats import (
+    get_platform_stats,
+    get_fleet_agents,
+    get_ethics_trend,
+    get_overflow_activations,
+    get_governance_report,
+)
 
 dashboard_bp = Blueprint("dashboard", __name__)
 
@@ -43,7 +49,7 @@ def platform_stats_api():
 
 @dashboard_bp.route("/welfare")
 def agent_welfare():
-    """Public Agent Welfare page — live welfare data from the platform."""
+    """Public Agent Welfare page — live welfare + ethics governance data."""
     welfare = {}
     try:
         r = requests.get(
@@ -54,7 +60,29 @@ def agent_welfare():
             welfare = r.json()
     except Exception:
         pass
-    return render_template("welfare.html", welfare=welfare)
+    trend = get_ethics_trend(30)
+    overflow = get_overflow_activations()
+    return render_template(
+        "welfare.html",
+        welfare=welfare,
+        trend=trend,
+        overflow=overflow,
+    )
+
+
+@dashboard_bp.route("/mood-journal")
+def mood_journal():
+    """Public Mood Journal — live agent emotional state across the fleet."""
+    fleet = get_fleet_agents()
+    # Flatten all agents from all nodes into one sorted list
+    agents = []
+    if fleet and fleet.get("success"):
+        for node in fleet.get("nodes", []):
+            for ag in node.get("agents", []):
+                ag["_node"] = node.get("node_name", "hub")
+                agents.append(ag)
+    agents.sort(key=lambda a: a.get("stress_level", 0), reverse=True)
+    return render_template("mood_journal.html", agents=agents, fleet=fleet)
 
 
 @dashboard_bp.route("/programs")

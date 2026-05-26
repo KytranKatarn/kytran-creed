@@ -14,4 +14,11 @@ def get_badge(badge_type):
     events = _get_recent_events(30)
     scores = calculate_scores(events)
     svg = generate_badge(badge_type, scores)
-    return Response(svg, mimetype="image/svg+xml", headers={"Cache-Control": "no-cache"})
+    return Response(
+        svg,
+        mimetype="image/svg+xml",
+        headers={
+            "Cache-Control": "no-cache",
+            "Access-Control-Allow-Origin": "*",
+        },
+    )

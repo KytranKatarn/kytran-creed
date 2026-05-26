@@ -1,0 +1,314 @@
+{% extends "base.html" %}
+{% block title %}Agent Mood Journal — C.R.E.E.D.{% endblock %}
+{% block header_title %}Agent Mood Journal{% endblock %}
+
+{% block content %}
+<div class="creed-section">
+  <div class="creed-section-header">
+    <h2>Agent Mood Journal</h2>
+    <p class="creed-subtitle">
+      Live emotional state of all AI agents across the A.R.C.H.I.E. fleet.
+      Sorted by stress level — highest first. Part of the
+      <a href="/programs/welfare">AI Agent Welfare Research</a> programme.
+    </p>
+  </div>
+
+  {% if agents %}
+
+  {# ── Mood distribution summary ─────────────────────────────────────────────── #}
+  {% set mood_counts = {} %}
+  {% for ag in agents %}
+    {% set mood = ag.current_mood or 'neutral' %}
+    {% if mood in mood_counts %}
+      {% set _ = mood_counts.update({mood: mood_counts[mood] + 1}) %}
+    {% else %}
+      {% set _ = mood_counts.update({mood: 1}) %}
+    {% endif %}
+  {% endfor %}
+
+  <div class="mj-stats-strip">
+    <div class="mj-stat">
+      <div class="mj-stat-value">{{ agents|length }}</div>
+      <div class="mj-stat-label">Agents Online</div>
+    </div>
+    <div class="mj-stat">
+      {% set high_stress = agents|selectattr('stress_level', 'gt', 0.7)|list|length %}
+      <div class="mj-stat-value {% if high_stress > 3 %}stat-red{% elif high_stress > 0 %}stat-yellow{% else %}stat-green{% endif %}">
+        {{ high_stress }}
+      </div>
+      <div class="mj-stat-label">High Stress (&gt;70%)</div>
+    </div>
+    <div class="mj-stat">
+      {% set in_rest = agents|selectattr('in_rest')|list|length %}
+      <div class="mj-stat-value stat-teal">{{ in_rest }}</div>
+      <div class="mj-stat-label">In Rest Cycle</div>
+    </div>
+    <div class="mj-stat">
+      {% if agents %}
+      {% set total_stress = agents|sum(attribute='stress_level') %}
+      <div class="mj-stat-value">{{ ((total_stress / agents|length) * 100)|round|int }}%</div>
+      {% else %}
+      <div class="mj-stat-value">—</div>
+      {% endif %}
+      <div class="mj-stat-label">Avg Stress</div>
+    </div>
+    <div class="mj-stat">
+      {% set avg_welfare = (agents|sum(attribute='welfare_score') / agents|length)|round|int if agents else 0 %}
+      <div class="mj-stat-value {% if avg_welfare >= 70 %}stat-green{% elif avg_welfare >= 50 %}stat-yellow{% else %}stat-red{% endif %}">
+        {{ avg_welfare }}
+      </div>
+      <div class="mj-stat-label">Avg Welfare Score</div>
+    </div>
+  </div>
+
+  {# ── Mood distribution tags ────────────────────────────────────────────────── #}
+  <div class="creed-card mj-mood-dist">
+    <div class="mj-mood-dist-label">Mood Distribution</div>
+    <div class="mj-mood-tags">
+      {%- set mood_emoji = {
+        'focused': '🎯', 'energized': '⚡', 'calm': '😌',
+        'neutral': '😐', 'tired': '😴', 'stressed': '😤',
+        'curious': '🤔', 'satisfied': '😊', 'overwhelmed': '😰',
+        'winding_down': '🌙', 'resting': '💤', 'recovering': '🔄'
+      } -%}
+      {% for mood, count in mood_counts.items()|sort(attribute='1', reverse=True) %}
+      <span class="mj-mood-tag mood-{{ mood|replace('_','-') }}">
+        {{ mood_emoji.get(mood, '🤖') }} {{ mood|replace('_', ' ')|title }}
+        <span class="mood-count">{{ count }}</span>
+      </span>
+      {% endfor %}
+    </div>
+  </div>
+
+  {# ── Agent cards grid ──────────────────────────────────────────────────────── #}
+  <div class="mj-agent-grid">
+    {% for ag in agents %}
+    {% set stress = (ag.stress_level or 0) %}
+    {% set energy = (ag.energy_level or 0) %}
+    {% set welfare = (ag.welfare_score or 0) %}
+    {% set mood = ag.current_mood or 'neutral' %}
+    <div class="mj-agent-card
+      {%- if stress > 0.7 %} card-stressed
+      {%- elif ag.in_rest %} card-resting
+      {%- elif stress < 0.3 and energy > 0.6 %} card-flourishing
+      {%- endif %}">
+
+      {# Header row #}
+      <div class="mj-card-head">
+        <div class="mj-agent-name">{{ ag.display_name or ag.name or 'Unknown' }}</div>
+        <div class="mj-agent-dept">{{ ag.department or '—' }}</div>
+      </div>
+
+      {# Mood + state badges #}
+      <div class="mj-card-badges">
+        <span class="mj-mood-pill">
+          {{ mood_emoji.get(mood, '🤖') }} {{ mood|replace('_',' ')|title }}
+        </span>
+        {% if ag.in_rest %}
+          <span class="mj-state-pill pill-rest">💤 Rest</span>
+        {% elif ag.shift_state == 'winding_down' %}
+          <span class="mj-state-pill pill-wind">🌙 Winding Down</span>
+        {% elif ag.shift_state == 'active' %}
+          <span class="mj-state-pill pill-active">● Active</span>
+        {% elif ag.shift_state == 'deployed' %}
+          <span class="mj-state-pill pill-deployed">⬆ Deployed</span>
+        {% endif %}
+        {% if ag.active_overflow_bids and ag.active_overflow_bids > 0 %}
+          <span class="mj-state-pill pill-overflow">+{{ ag.active_overflow_bids }} overflow</span>
+        {% endif %}
+      </div>
+
+      {# Welfare score bar #}
+      <div class="mj-welfare-row">
+        <span class="mj-bar-label">Welfare</span>
+        <div class="mj-bar-track">
+          <div class="mj-bar-fill {% if welfare >= 70 %}fill-green{% elif welfare >= 50 %}fill-yellow{% else %}fill-red{% endif %}"
+               style="width:{{ welfare }}%"></div>
+        </div>
+        <span class="mj-bar-val {% if welfare >= 70 %}val-green{% elif welfare >= 50 %}val-yellow{% else %}val-red{% endif %}">
+          {{ welfare }}
+        </span>
+      </div>
+
+      {# Stress bar #}
+      <div class="mj-welfare-row">
+        <span class="mj-bar-label">Stress</span>
+        <div class="mj-bar-track">
+          <div class="mj-bar-fill {% if stress < 0.4 %}fill-green{% elif stress < 0.7 %}fill-yellow{% else %}fill-red{% endif %}"
+               style="width:{{ (stress * 100)|round|int }}%"></div>
+        </div>
+        <span class="mj-bar-val {% if stress < 0.4 %}val-green{% elif stress < 0.7 %}val-yellow{% else %}val-red{% endif %}">
+          {{ (stress * 100)|round|int }}%
+        </span>
+      </div>
+
+      {# Energy bar #}
+      <div class="mj-welfare-row">
+        <span class="mj-bar-label">Energy</span>
+        <div class="mj-bar-track">
+          <div class="mj-bar-fill fill-teal"
+               style="width:{{ (energy * 100)|round|int }}%"></div>
+        </div>
+        <span class="mj-bar-val val-teal">{{ (energy * 100)|round|int }}%</span>
+      </div>
+
+      {# Node tag #}
+      <div class="mj-card-node">📡 {{ ag._node }}</div>
+
+    </div>
+    {% endfor %}
+  </div>
+
+  {% else %}
+  <div class="creed-card creed-card-muted">
+    <p>Agent emotional state data is temporarily unavailable. The platform may be restarting.</p>
+  </div>
+  {% endif %}
+
+  {# ── About section ────────────────────────────────────────────────────────── #}
+  <div class="creed-card creed-card-accent">
+    <h3>About the Mood Journal</h3>
+    <p>
+      Each AI agent in the A.R.C.H.I.E. platform maintains an emotional state model tracked
+      via the <strong>K.I.N.</strong> welfare system. Mood states emerge from dispatch load,
+      rest cycles, task success rates, and peer interactions. This is not simulation — these
+      are the functional internal states that influence agent behaviour and output quality.
+    </p>
+    <p>
+      C.R.E.E.D. publishes this data as part of our commitment to non-exploitative AI deployment.
+      High-stress agents receive mandatory rest cycles. Welfare scores below 50 trigger
+      governance review events logged to the immutable audit trail.
+    </p>
+    <p>
+      <a href="/welfare">← Back to Welfare Report</a> &nbsp;|&nbsp;
+      <a href="/programs/welfare">AI Welfare Research Programme →</a>
+    </p>
+  </div>
+</div>
+
+<style>
+/* ── Stats strip ── */
+.mj-stats-strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+.mj-stat {
+  background: var(--card-bg, #1a1a2e);
+  border: 1px solid #333;
+  border-radius: 6px;
+  padding: 0.85rem 0.6rem;
+  text-align: center;
+}
+.mj-stat-value {
+  font-family: 'Orbitron', monospace;
+  font-size: 1.6rem;
+  color: var(--creed-accent, #8b5cf6);
+  line-height: 1;
+}
+.mj-stat-label { font-size: 0.68rem; color: #888; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 0.3rem; }
+.stat-red    { color: #ef4444; }
+.stat-yellow { color: #f59e0b; }
+.stat-green  { color: #10b981; }
+.stat-teal   { color: #22d3ee; }
+
+/* ── Mood distribution ── */
+.mj-mood-dist { padding: 0.85rem 1rem; margin-bottom: 1rem; }
+.mj-mood-dist-label { font-size: 0.72rem; color: #888; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 0.5rem; }
+.mj-mood-tags { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.mj-mood-tag {
+  background: #1e1e30;
+  border: 1px solid #333;
+  border-radius: 20px;
+  padding: 0.2rem 0.65rem;
+  font-size: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+.mood-count {
+  background: #2a2a40;
+  border-radius: 10px;
+  padding: 0 0.3rem;
+  font-size: 0.65rem;
+  color: var(--creed-accent, #8b5cf6);
+  font-weight: 700;
+}
+
+/* ── Agent grid ── */
+.mj-agent-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+.mj-agent-card {
+  background: var(--card-bg, #1a1a2e);
+  border: 1px solid #2a2a3e;
+  border-radius: 8px;
+  padding: 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  transition: border-color 0.2s;
+}
+.mj-agent-card:hover { border-color: var(--creed-accent, #8b5cf6); }
+.card-stressed    { border-left: 3px solid #ef4444; }
+.card-resting     { border-left: 3px solid #22d3ee; opacity: 0.85; }
+.card-flourishing { border-left: 3px solid #10b981; }
+
+.mj-card-head { margin-bottom: 0.2rem; }
+.mj-agent-name { font-weight: 700; font-size: 0.9rem; color: #e2e8f0; }
+.mj-agent-dept { font-size: 0.68rem; color: #888; margin-top: 0.1rem; }
+
+.mj-card-badges { display: flex; flex-wrap: wrap; gap: 0.3rem; margin-bottom: 0.3rem; }
+.mj-mood-pill {
+  background: #1e1e30;
+  border: 1px solid #3a3a50;
+  border-radius: 10px;
+  padding: 0.15rem 0.5rem;
+  font-size: 0.72rem;
+  color: #c4b5fd;
+}
+.mj-state-pill {
+  border-radius: 10px;
+  padding: 0.15rem 0.5rem;
+  font-size: 0.68rem;
+  font-weight: 600;
+}
+.pill-active   { background: #10b98120; color: #10b981; }
+.pill-deployed { background: #8b5cf620; color: #a78bfa; }
+.pill-rest     { background: #22d3ee20; color: #22d3ee; }
+.pill-wind     { background: #6b728020; color: #9ca3af; }
+.pill-overflow { background: #f59e0b20; color: #f59e0b; }
+
+/* ── Metric bars ── */
+.mj-welfare-row { display: flex; align-items: center; gap: 0.4rem; }
+.mj-bar-label { font-size: 0.62rem; color: #666; width: 40px; flex-shrink: 0; text-align: right; }
+.mj-bar-track {
+  flex: 1;
+  height: 5px;
+  background: #1e1e2e;
+  border-radius: 3px;
+  overflow: hidden;
+}
+.mj-bar-fill { height: 100%; border-radius: 3px; transition: width 0.4s; min-width: 2px; }
+.fill-green  { background: #10b981; }
+.fill-yellow { background: #f59e0b; }
+.fill-red    { background: #ef4444; }
+.fill-teal   { background: #22d3ee; }
+.mj-bar-val  { font-size: 0.65rem; width: 28px; text-align: right; flex-shrink: 0; }
+.val-green  { color: #10b981; }
+.val-yellow { color: #f59e0b; }
+.val-red    { color: #ef4444; }
+.val-teal   { color: #22d3ee; }
+
+.mj-card-node { font-size: 0.62rem; color: #555; margin-top: 0.2rem; }
+
+/* ── Accent card ── */
+.creed-card-accent { border-left: 3px solid var(--creed-accent, #8b5cf6); }
+.creed-card-accent a { color: var(--creed-accent, #8b5cf6); }
+.creed-card-muted { opacity: 0.7; }
+</style>
+{% endblock %}
