@@ -207,6 +207,29 @@
   </div>
 </div>
 
+<!-- GET /api/public/score -->
+<div class="api-endpoint">
+  <div class="api-method-path">
+    <span class="api-method method-get">GET</span>
+    <span class="api-path">/api/public/score</span>
+  </div>
+  <p class="api-desc">Public, read-only compliance summary for badge widgets on monitored
+    products (e.g. what-the-fact.tech/transparency). CORS-open, cached 60s, and
+    rate-limited to 60 requests/minute per IP.</p>
+  <div class="api-example">
+    <div class="api-example-label">Request</div>
+    <pre><code>curl "https://creed.kytranempowerment.com/api/public/score"</code></pre>
+    <div class="api-example-label">Response (200)</div>
+    <pre><code>{
+  "score": 92.5,
+  "grade": "A",
+  "events_today": 7,
+  "active_categories": 4,
+  "last_checked": "2026-05-30T14:22:10-04:00"
+}</code></pre>
+  </div>
+</div>
+
 <!-- GET /audit -->
 <div class="api-endpoint">
   <div class="api-method-path">
