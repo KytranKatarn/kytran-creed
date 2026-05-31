@@ -24,6 +24,26 @@ CREATE INDEX IF NOT EXISTS idx_events_category ON governance_events(category);
 CREATE INDEX IF NOT EXISTS idx_events_severity ON governance_events(severity);
 CREATE INDEX IF NOT EXISTS idx_events_platform ON governance_events(source_platform);
 CREATE INDEX IF NOT EXISTS idx_events_created ON governance_events(created_at);
+
+CREATE TABLE IF NOT EXISTS incident_log (
+    id SERIAL PRIMARY KEY,
+    incident_ref VARCHAR(40) UNIQUE NOT NULL,
+    severity VARCHAR(20) NOT NULL,
+    title VARCHAR(300) NOT NULL,
+    description TEXT,
+    affected_agents TEXT,
+    root_cause TEXT,
+    resolution TEXT,
+    status VARCHAR(20) NOT NULL DEFAULT 'investigating',
+    lessons_learned TEXT,
+    disclosed BOOLEAN NOT NULL DEFAULT FALSE,
+    disclosed_at TIMESTAMP,
+    occurred_at TIMESTAMP DEFAULT NOW(),
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_incident_disclosed ON incident_log(disclosed, disclosed_at);
+CREATE INDEX IF NOT EXISTS idx_incident_severity ON incident_log(severity);
 """
 
 
@@ -56,10 +76,17 @@ def _get_pg_conn():
 
 
 def get_pg():
-    if not _pg_available:
+    global _pg_available
+    # If PG is configured, attempt a real connection even when a prior init left
+    # _pg_available False for THIS worker (a startup race with the PG container
+    # leaves one gunicorn worker silently reading the empty SQLite fallback —
+    # the cause of flaky "no rows" reads). Self-heals the flag on success.
+    if not _pg_available and not Config.PG_HOST:
         return None
     try:
-        return _get_pg_conn()
+        conn = _get_pg_conn()
+        _pg_available = True
+        return conn
     except Exception as e:
         logger.error("Postgres connection failed: %s", e)
         return None

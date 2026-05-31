@@ -218,3 +218,43 @@ def public_oversight():
             "Access-Control-Allow-Origin": "*",
         },
     )
+
+
+@public_bp.route("/incidents", methods=["GET"])
+def public_incidents():
+    """Public AI incident disclosure log (task #3263).
+
+    Returns only DISCLOSED incidents (status.io-style) — filing an incident does
+    not auto-publish it. CORS-open, 60s cache, per-IP rate limited.
+    """
+    ip = request.headers.get("X-Forwarded-For", request.remote_addr or "unknown")
+    ip = ip.split(",")[0].strip()
+    if _rate_limited(ip):
+        return (
+            jsonify({"error": "rate_limited", "retry_after": RATE_WINDOW}),
+            429,
+            {"Access-Control-Allow-Origin": "*", "Retry-After": str(RATE_WINDOW)},
+        )
+
+    from kytran_creed.incident_store import list_incidents
+
+    try:
+        incidents = list_incidents(disclosed_only=True)
+    except Exception as e:
+        logger.error("public_incidents failed: %s", e)
+        incidents = []
+
+    return (
+        jsonify(
+            {
+                "registry": "C.R.E.E.D. AI Incident Disclosure Log",
+                "count": len(incidents),
+                "incidents": incidents,
+            }
+        ),
+        200,
+        {
+            "Cache-Control": "public, max-age=60",
+            "Access-Control-Allow-Origin": "*",
+        },
+    )

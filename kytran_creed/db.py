@@ -54,6 +54,23 @@ def init_db(path):
             metadata TEXT DEFAULT '{}',
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
+        CREATE TABLE IF NOT EXISTS incident_log (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            incident_ref TEXT UNIQUE NOT NULL,
+            severity TEXT NOT NULL,
+            title TEXT NOT NULL,
+            description TEXT,
+            affected_agents TEXT,
+            root_cause TEXT,
+            resolution TEXT,
+            status TEXT NOT NULL DEFAULT 'investigating',
+            lessons_learned TEXT,
+            disclosed INTEGER NOT NULL DEFAULT 0,
+            disclosed_at TIMESTAMP,
+            occurred_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
     """)
     conn.close()
     logger.info("SQLite initialized at %s", path)

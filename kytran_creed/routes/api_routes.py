@@ -129,6 +129,61 @@ def post_event():
     return jsonify({"success": True, "event_id": event_id}), 201
 
 
+@api_bp.route("/incidents", methods=["POST"])
+def post_incident():
+    """File an AI incident (task #3263).
+
+    Filing does NOT auto-publish — public visibility is gated by ``disclosed``.
+    Body: {severity (low/medium/high/critical), title, description?,
+    affected_agents?, root_cause?, resolution?, status?, lessons_learned?,
+    disclosed?}.
+    """
+    import uuid
+
+    from kytran_creed.incident_store import SEVERITIES, STATUSES, store_incident
+
+    data = request.get_json(force=True, silent=True) or {}
+    severity = (data.get("severity") or "").strip().lower()
+    title = (data.get("title") or "").strip()
+    if severity not in SEVERITIES:
+        return (
+            jsonify({"success": False, "error": f"severity must be one of {sorted(SEVERITIES)}"}),
+            400,
+        )
+    if not title or len(title) > 300:
+        return jsonify({"success": False, "error": "title required (<=300 chars)"}), 400
+
+    status = (data.get("status") or "investigating").strip().lower()
+    if status not in STATUSES:
+        status = "investigating"
+
+    aff = data.get("affected_agents")
+    if isinstance(aff, list):
+        aff = ", ".join(str(a) for a in aff)
+
+    incident_ref = (data.get("incident_ref") or ("INC-" + uuid.uuid4().hex[:8])).strip()
+    disclosed = bool(data.get("disclosed", False))
+
+    iid = store_incident(
+        incident_ref=incident_ref,
+        severity=severity,
+        title=title,
+        description=(data.get("description") or ""),
+        affected_agents=(aff or ""),
+        root_cause=(data.get("root_cause") or ""),
+        resolution=(data.get("resolution") or ""),
+        status=status,
+        lessons_learned=(data.get("lessons_learned") or ""),
+        disclosed=disclosed,
+    )
+    if iid is None:
+        return jsonify({"success": False, "error": "incident store failed"}), 500
+    return (
+        jsonify({"success": True, "incident_ref": incident_ref, "id": iid, "disclosed": disclosed}),
+        201,
+    )
+
+
 @api_bp.route("/events", methods=["GET"])
 def get_events():
     category = request.args.get("category")
