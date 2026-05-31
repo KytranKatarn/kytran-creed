@@ -210,4 +210,13 @@ def get_scores():
     days = int(request.args.get("days", 30))
     events = _get_recent_events(days)
     scores = calculate_scores(events)
-    return jsonify(scores)
+    # CORS-open + short-cached so public sites (creed-ai.org governance widget)
+    # can consume the per-category breakdown cross-origin — mirrors /api/public/score.
+    return (
+        jsonify(scores),
+        200,
+        {
+            "Cache-Control": "public, max-age=60",
+            "Access-Control-Allow-Origin": "*",
+        },
+    )
