@@ -152,3 +152,36 @@ def public_score():
             "Access-Control-Allow-Origin": "*",
         },
     )
+
+
+@public_bp.route("/remediations", methods=["GET"])
+def public_remediations():
+    """Public read-only Remediation Registry payload.
+
+    Returns the curated registry of known product limitations + governance
+    position (see kytran_creed/remediation_data.py). CORS-open, 5-min cache,
+    per-IP rate limited. Consumed by product "Known Limitations" sections and
+    by creed-ai.org. Static content — no DB read.
+    """
+    ip = request.headers.get("X-Forwarded-For", request.remote_addr or "unknown")
+    ip = ip.split(",")[0].strip()
+    if _rate_limited(ip):
+        return (
+            jsonify({"error": "rate_limited", "retry_after": RATE_WINDOW}),
+            429,
+            {
+                "Access-Control-Allow-Origin": "*",
+                "Retry-After": str(RATE_WINDOW),
+            },
+        )
+
+    from kytran_creed.remediation_data import to_public_dict
+
+    return (
+        jsonify(to_public_dict()),
+        200,
+        {
+            "Cache-Control": "public, max-age=300",
+            "Access-Control-Allow-Origin": "*",
+        },
+    )

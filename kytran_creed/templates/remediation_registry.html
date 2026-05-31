@@ -1,0 +1,211 @@
+{% extends "base.html" %}
+{% block title %}Remediation Registry — C.R.E.E.D.{% endblock %}
+{% block header_title %}Remediation Registry{% endblock %}
+
+{% block head %}
+<style>
+  .lcars-content { max-width: 980px; margin: 0 auto; }
+
+  .rr-hero { padding: 32px 4px 12px; }
+  .rr-hero h1 {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 30px;
+    font-weight: 900;
+    color: var(--creed-teal);
+    letter-spacing: 1px;
+    margin: 0 0 10px;
+  }
+  .rr-hero p {
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--creed-text-dim);
+    max-width: 760px;
+  }
+  .rr-hero a { color: var(--creed-accent); }
+
+  /* Status summary pills */
+  .rr-summary {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin: 22px 0 8px;
+  }
+  .rr-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font-family: 'Antonio', sans-serif;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    padding: 5px 12px;
+    border-radius: 20px;
+    background: var(--creed-panel);
+    border: 1px solid var(--creed-border);
+    color: var(--creed-text-dim);
+  }
+  .rr-pill .rr-dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+  .rr-pill .rr-pill-n { color: #fff; font-weight: 700; }
+
+  /* Entry cards */
+  .rr-list { margin-top: 18px; display: flex; flex-direction: column; gap: 16px; }
+  .rr-card {
+    background: var(--creed-panel);
+    border: 1px solid var(--creed-border);
+    border-left-width: 3px;
+    border-radius: 8px;
+    padding: 20px 22px;
+    scroll-margin-top: 20px;
+  }
+  .rr-card:target {
+    border-color: var(--creed-teal);
+    box-shadow: 0 0 0 1px var(--creed-teal), 0 0 24px rgba(0,229,255,0.12);
+  }
+  .rr-card-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+  .rr-source {
+    font-family: 'Antonio', sans-serif;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--creed-text-dim);
+    background: #ffffff0d;
+    border: 1px solid var(--creed-border);
+    border-radius: 4px;
+    padding: 2px 8px;
+  }
+  .rr-status {
+    font-family: 'Antonio', sans-serif;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    padding: 2px 10px;
+    border-radius: 20px;
+    margin-left: auto;
+  }
+  .rr-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 17px;
+    font-weight: 700;
+    color: #fff;
+    margin: 2px 0 4px;
+    width: 100%;
+  }
+  .rr-category {
+    font-size: 11px;
+    color: var(--creed-text-dim);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  .rr-quote {
+    border-left: 2px solid var(--creed-accent);
+    padding: 6px 0 6px 14px;
+    margin: 14px 0;
+    font-size: 13.5px;
+    font-style: italic;
+    color: #cdd2e6;
+  }
+  .rr-block { margin-top: 12px; }
+  .rr-block-label {
+    font-family: 'Antonio', sans-serif;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--creed-accent);
+    margin-bottom: 4px;
+  }
+  .rr-block p { font-size: 13.5px; line-height: 1.6; color: #c2c7da; margin: 0; }
+
+  .rr-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 18px;
+    margin-top: 16px;
+    padding-top: 12px;
+    border-top: 1px solid var(--creed-border);
+    font-size: 12px;
+    color: var(--creed-text-dim);
+  }
+  .rr-meta b { color: #c2c7da; font-weight: 600; }
+  .rr-permalink { margin-left: auto; color: var(--creed-accent); text-decoration: none; }
+  .rr-permalink:hover { text-decoration: underline; }
+
+  .rr-footer {
+    text-align: center;
+    padding: 28px 0 8px;
+    font-size: 12px;
+    color: var(--creed-text-dim);
+  }
+  .rr-footer a { color: var(--creed-accent); font-weight: 600; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="rr-hero">
+  <h1>Remediation Registry</h1>
+  <p>
+    Radical transparency means naming our own limitations and saying what we do
+    about each one. This registry tracks every publicly-acknowledged limitation
+    of a C.R.E.E.D.-monitored product &mdash; why it exists, the governance
+    position, and who owns it. Product &ldquo;Known Limitations&rdquo; sections
+    link directly into the matching entry here.
+  </p>
+
+  <div class="rr-summary">
+    {% for status, meta in status_meta.items() %}
+      {% if status_counts.get(status) %}
+      <span class="rr-pill">
+        <span class="rr-dot" style="background: {{ meta.color }};"></span>
+        <span class="rr-pill-n">{{ status_counts.get(status) }}</span> {{ meta.label }}
+      </span>
+      {% endif %}
+    {% endfor %}
+  </div>
+</div>
+
+<div class="rr-list">
+  {% for e in entries %}
+  {% set meta = status_meta.get(e.status, {'label': e.status, 'color': '#888'}) %}
+  <article class="rr-card" id="{{ e.slug }}" style="border-left-color: {{ meta.color }};">
+    <div class="rr-card-head">
+      <span class="rr-source">{{ e.source_product }}</span>
+      <span class="rr-category">{{ e.category }}</span>
+      <span class="rr-status" style="background: {{ meta.color }}22; color: {{ meta.color }}; border: 1px solid {{ meta.color }}44;">
+        {{ meta.label }}
+      </span>
+      <h2 class="rr-title">{{ e.limitation_title }}</h2>
+    </div>
+
+    <div class="rr-quote">&ldquo;{{ e.limitation_text }}&rdquo;</div>
+
+    <div class="rr-block">
+      <div class="rr-block-label">Why this exists</div>
+      <p>{{ e.description }}</p>
+    </div>
+
+    <div class="rr-block">
+      <div class="rr-block-label">What we do about it</div>
+      <p>{{ e.remediation_plan }}</p>
+    </div>
+
+    <div class="rr-meta">
+      <span>Owner: <b>{{ e.owner }}</b></span>
+      {% if e.target_date %}<span>Target: <b>{{ e.target_date }}</b></span>{% endif %}
+      <span>Updated: <b>{{ e.updated_at }}</b></span>
+      <a class="rr-permalink" href="#{{ e.slug }}">#{{ e.slug }}</a>
+    </div>
+  </article>
+  {% endfor %}
+</div>
+
+<div class="rr-footer">
+  Machine-readable: <a href="/api/public/remediations">/api/public/remediations</a>
+  &mdash; Powered by <a href="https://creed-ai.org" target="_blank" rel="noopener">C.R.E.E.D.</a>,
+  Compliance, Rights &amp; Ethical Enforcement Directive
+</div>
+{% endblock %}

@@ -126,6 +126,28 @@ def ethics_by_department():
     return jsonify({"success": True, "by_department": by_dept})
 
 
+@dashboard_bp.route("/remediation")
+def remediation_registry():
+    """Public Remediation Registry — known product limitations + governance position.
+
+    Server-rendered from the curated ``remediation_data`` module (no login, like
+    ``/results`` and ``/welfare``). Each entry has a ``#slug`` anchor that product
+    "Known Limitations" sections link to.
+    """
+    from kytran_creed.remediation_data import (
+        get_remediations,
+        get_status_counts,
+        STATUS_META,
+    )
+
+    return render_template(
+        "remediation_registry.html",
+        entries=get_remediations(),
+        status_counts=get_status_counts(),
+        status_meta=STATUS_META,
+    )
+
+
 @dashboard_bp.route("/programs")
 def programs():
     return render_template("programs/index.html")
