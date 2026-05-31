@@ -185,3 +185,36 @@ def public_remediations():
             "Access-Control-Allow-Origin": "*",
         },
     )
+
+
+@public_bp.route("/oversight", methods=["GET"])
+def public_oversight():
+    """Public read-only Human Oversight Registry payload (task #3264).
+
+    Returns the curated human-in-the-loop framework — which AI decisions are
+    autonomous vs require human approval, by risk level (see
+    kytran_creed/oversight_data.py). CORS-open, 5-min cache, per-IP rate
+    limited. Static content — no DB read.
+    """
+    ip = request.headers.get("X-Forwarded-For", request.remote_addr or "unknown")
+    ip = ip.split(",")[0].strip()
+    if _rate_limited(ip):
+        return (
+            jsonify({"error": "rate_limited", "retry_after": RATE_WINDOW}),
+            429,
+            {
+                "Access-Control-Allow-Origin": "*",
+                "Retry-After": str(RATE_WINDOW),
+            },
+        )
+
+    from kytran_creed.oversight_data import to_public_dict
+
+    return (
+        jsonify(to_public_dict()),
+        200,
+        {
+            "Cache-Control": "public, max-age=300",
+            "Access-Control-Allow-Origin": "*",
+        },
+    )

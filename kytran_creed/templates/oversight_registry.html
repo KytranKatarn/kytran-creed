@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+{% block title %}Human Oversight Registry — C.R.E.E.D.{% endblock %}
+{% block header_title %}Human Oversight Registry{% endblock %}
+
+{% block head %}
+<style>
+  .lcars-content { max-width: 980px; margin: 0 auto; }
+
+  .ov-hero { padding: 32px 4px 12px; }
+  .ov-hero h1 {
+    font-family: 'Orbitron', sans-serif; font-size: 30px; font-weight: 900;
+    color: var(--creed-teal); letter-spacing: 1px; margin: 0 0 10px;
+  }
+  .ov-hero p { font-size: 14px; line-height: 1.6; color: var(--creed-text-dim); max-width: 760px; }
+  .ov-hero a { color: var(--creed-accent); }
+
+  .ov-summary { display: flex; flex-wrap: wrap; gap: 10px; margin: 22px 0 8px; }
+  .ov-pill {
+    display: inline-flex; align-items: center; gap: 7px;
+    font-family: 'Antonio', sans-serif; font-size: 12px; text-transform: uppercase;
+    letter-spacing: 1px; padding: 5px 12px; border-radius: 20px;
+    background: var(--creed-panel); border: 1px solid var(--creed-border); color: var(--creed-text-dim);
+  }
+  .ov-pill .ov-dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+  .ov-pill .ov-pill-n { color: #fff; font-weight: 700; }
+
+  .ov-group { margin-top: 26px; }
+  .ov-group-head {
+    display: flex; align-items: center; gap: 10px; margin-bottom: 12px;
+    padding-bottom: 6px; border-bottom: 1px solid var(--creed-border);
+  }
+  .ov-group-dot { width: 12px; height: 12px; border-radius: 50%; }
+  .ov-group-title { font-family: 'Orbitron', sans-serif; font-size: 15px; font-weight: 700; letter-spacing: 1px; }
+
+  .ov-list { display: flex; flex-direction: column; gap: 14px; }
+  .ov-card {
+    background: var(--creed-panel); border: 1px solid var(--creed-border);
+    border-left-width: 3px; border-radius: 8px; padding: 18px 20px; scroll-margin-top: 20px;
+  }
+  .ov-card:target { border-color: var(--creed-teal); box-shadow: 0 0 0 1px var(--creed-teal), 0 0 24px rgba(0,229,255,0.12); }
+  .ov-card-head { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .ov-type {
+    font-family: 'Antonio', sans-serif; font-size: 11px; text-transform: uppercase; letter-spacing: 1px;
+    color: var(--creed-text-dim); background: #ffffff0d; border: 1px solid var(--creed-border);
+    border-radius: 4px; padding: 2px 8px;
+  }
+  .ov-automation {
+    font-family: 'Antonio', sans-serif; font-size: 11px; text-transform: uppercase; letter-spacing: 1px;
+    padding: 2px 10px; border-radius: 20px; margin-left: auto;
+  }
+  .ov-title { font-family: 'Orbitron', sans-serif; font-size: 16px; font-weight: 700; color: #fff; margin: 2px 0 4px; width: 100%; }
+  .ov-desc { font-size: 13.5px; line-height: 1.6; color: #c2c7da; margin: 8px 0 0; }
+
+  .ov-rows { margin-top: 12px; display: flex; flex-direction: column; gap: 8px; }
+  .ov-row { display: flex; gap: 10px; font-size: 12.5px; line-height: 1.5; }
+  .ov-row-label {
+    flex: 0 0 130px; font-family: 'Antonio', sans-serif; font-size: 11px; text-transform: uppercase;
+    letter-spacing: 1px; color: var(--creed-accent); padding-top: 1px;
+  }
+  .ov-row-val { color: #c2c7da; }
+
+  .ov-meta {
+    display: flex; flex-wrap: wrap; gap: 18px; margin-top: 14px; padding-top: 10px;
+    border-top: 1px solid var(--creed-border); font-size: 12px; color: var(--creed-text-dim);
+  }
+  .ov-meta b { color: #c2c7da; font-weight: 600; }
+  .ov-permalink { margin-left: auto; color: var(--creed-accent); text-decoration: none; }
+  .ov-permalink:hover { text-decoration: underline; }
+
+  .ov-footer { text-align: center; padding: 28px 0 8px; font-size: 12px; color: var(--creed-text-dim); }
+  .ov-footer a { color: var(--creed-accent); font-weight: 600; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="ov-hero">
+  <h1>Human Oversight Registry</h1>
+  <p>
+    Which AI decisions run autonomously, and which require a human? This registry
+    is our human-in-the-loop framework &mdash; every class of decision sorted by
+    risk, with its automation level, what triggers human review, and the
+    escalation path. Low-risk work is autonomous; high-risk and irreversible
+    actions are gated on a human. Aligned with EU AI Act Article 14 (human
+    oversight) and the Montreal Declaration.
+  </p>
+
+  <div class="ov-summary">
+    {% for level, meta in risk_levels %}
+      {% if risk_counts.get(level) %}
+      <span class="ov-pill">
+        <span class="ov-dot" style="background: {{ meta.color }};"></span>
+        <span class="ov-pill-n">{{ risk_counts.get(level) }}</span> {{ meta.label }}
+      </span>
+      {% endif %}
+    {% endfor %}
+  </div>
+</div>
+
+{% for level, meta in risk_levels %}
+  {% set group = entries | selectattr('risk_level', 'equalto', level) | list %}
+  {% if group %}
+  <div class="ov-group">
+    <div class="ov-group-head">
+      <span class="ov-group-dot" style="background: {{ meta.color }};"></span>
+      <span class="ov-group-title" style="color: {{ meta.color }};">{{ meta.label }}</span>
+    </div>
+    <div class="ov-list">
+      {% for e in group %}
+      <article class="ov-card" id="{{ e.slug }}" style="border-left-color: {{ meta.color }};">
+        <div class="ov-card-head">
+          <span class="ov-type">{{ e.action_type }}</span>
+          <span class="ov-automation" style="background: {{ meta.color }}22; color: {{ meta.color }}; border: 1px solid {{ meta.color }}44;">
+            {{ e.automation_level }}
+          </span>
+          <h2 class="ov-title">{{ e.title }}</h2>
+        </div>
+
+        <p class="ov-desc">{{ e.description }}</p>
+
+        <div class="ov-rows">
+          <div class="ov-row">
+            <div class="ov-row-label">Human review</div>
+            <div class="ov-row-val">{{ e.human_review_trigger }}</div>
+          </div>
+          <div class="ov-row">
+            <div class="ov-row-label">Escalation path</div>
+            <div class="ov-row-val">{{ e.escalation_path }}</div>
+          </div>
+        </div>
+
+        <div class="ov-meta">
+          <span>Owner: <b>{{ e.owner }}</b></span>
+          <a class="ov-permalink" href="#{{ e.slug }}">#{{ e.slug }}</a>
+        </div>
+      </article>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+{% endfor %}
+
+<div class="ov-footer">
+  Machine-readable: <a href="/api/public/oversight">/api/public/oversight</a>
+  &mdash; Reviewed by E.T.H.O.S. &middot; Powered by
+  <a href="https://creed-ai.org" target="_blank" rel="noopener">C.R.E.E.D.</a>,
+  Compliance, Rights &amp; Ethical Enforcement Directive
+</div>
+{% endblock %}

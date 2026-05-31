@@ -148,6 +148,30 @@ def remediation_registry():
     )
 
 
+@dashboard_bp.route("/oversight")
+def oversight_registry():
+    """Public Human Oversight Registry — which AI decisions need human approval.
+
+    Server-rendered from the curated ``oversight_data`` module (no login, like
+    ``/results`` and ``/remediation``). Entries are grouped by risk level; each
+    has a ``#slug`` anchor.
+    """
+    from kytran_creed.oversight_data import (
+        get_oversight,
+        get_risk_counts,
+        RISK_META,
+    )
+
+    risk_levels = sorted(RISK_META.items(), key=lambda kv: kv[1]["order"])
+    return render_template(
+        "oversight_registry.html",
+        entries=get_oversight(),
+        risk_counts=get_risk_counts(),
+        risk_meta=RISK_META,
+        risk_levels=risk_levels,
+    )
+
+
 @dashboard_bp.route("/programs")
 def programs():
     return render_template("programs/index.html")
