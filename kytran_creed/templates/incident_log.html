@@ -1,0 +1,158 @@
+{% extends "base.html" %}
+{% block title %}AI Incident Log — C.R.E.E.D.{% endblock %}
+{% block header_title %}AI Incident Disclosure Log{% endblock %}
+
+{% block head %}
+<style>
+  .lcars-content { max-width: 980px; margin: 0 auto; }
+  .il-hero { padding: 32px 4px 12px; }
+  .il-hero h1 {
+    font-family: 'Orbitron', sans-serif; font-size: 30px; font-weight: 900;
+    color: var(--creed-teal); letter-spacing: 1px; margin: 0 0 10px;
+  }
+  .il-hero p { font-size: 14px; line-height: 1.6; color: var(--creed-text-dim); max-width: 760px; }
+
+  .il-status-banner {
+    display: flex; align-items: center; gap: 12px; margin: 20px 0;
+    padding: 16px 20px; border-radius: 10px;
+    background: var(--creed-panel); border: 1px solid var(--creed-border);
+  }
+  .il-status-dot { width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0; }
+  .il-status-ok { background: #10b981; box-shadow: 0 0 12px #10b98188; }
+  .il-status-active { background: #f59e0b; box-shadow: 0 0 12px #f59e0b88; }
+  .il-status-text { font-family: 'Orbitron', sans-serif; font-size: 15px; color: #fff; }
+  .il-status-sub { font-size: 12px; color: var(--creed-text-dim); }
+
+  /* Runbook */
+  .il-runbook { margin: 28px 0; }
+  .il-runbook h2, .il-section h2 {
+    font-family: 'Orbitron', sans-serif; font-size: 15px; font-weight: 700;
+    color: var(--creed-accent); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 12px;
+  }
+  .il-steps { display: flex; flex-wrap: wrap; gap: 10px; }
+  .il-step {
+    flex: 1 1 140px; background: var(--creed-panel); border: 1px solid var(--creed-border);
+    border-radius: 8px; padding: 12px 14px;
+  }
+  .il-step-n {
+    font-family: 'Orbitron', sans-serif; font-size: 11px; color: var(--creed-teal); letter-spacing: 1px;
+  }
+  .il-step-t { font-family: 'Orbitron', sans-serif; font-size: 13px; color: #fff; margin: 3px 0; }
+  .il-step-d { font-size: 11.5px; color: var(--creed-text-dim); line-height: 1.45; }
+
+  /* Incident cards */
+  .il-list { display: flex; flex-direction: column; gap: 14px; }
+  .il-card {
+    background: var(--creed-panel); border: 1px solid var(--creed-border);
+    border-left-width: 3px; border-radius: 8px; padding: 18px 20px; scroll-margin-top: 20px;
+  }
+  .il-card:target { border-color: var(--creed-teal); box-shadow: 0 0 0 1px var(--creed-teal); }
+  .il-card-head { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .il-sev {
+    font-family: 'Antonio', sans-serif; font-size: 11px; text-transform: uppercase; letter-spacing: 1px;
+    padding: 2px 10px; border-radius: 20px;
+  }
+  .il-date { font-size: 11px; color: var(--creed-text-dim); }
+  .il-istatus {
+    font-family: 'Antonio', sans-serif; font-size: 11px; text-transform: uppercase; letter-spacing: 1px;
+    color: var(--creed-text-dim); margin-left: auto;
+  }
+  .il-title { font-family: 'Orbitron', sans-serif; font-size: 16px; font-weight: 700; color: #fff; margin: 2px 0 4px; width: 100%; }
+  .il-desc { font-size: 13.5px; line-height: 1.6; color: #c2c7da; margin: 6px 0 0; }
+  .il-rows { margin-top: 12px; display: flex; flex-direction: column; gap: 7px; }
+  .il-row { display: flex; gap: 10px; font-size: 12.5px; line-height: 1.5; }
+  .il-row-label {
+    flex: 0 0 130px; font-family: 'Antonio', sans-serif; font-size: 11px; text-transform: uppercase;
+    letter-spacing: 1px; color: var(--creed-accent); padding-top: 1px;
+  }
+  .il-row-val { color: #c2c7da; }
+  .il-footer { text-align: center; padding: 26px 0 8px; font-size: 12px; color: var(--creed-text-dim); }
+  .il-footer a { color: var(--creed-accent); font-weight: 600; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="il-hero">
+  <h1>AI Incident Disclosure Log</h1>
+  <p>
+    Proactive transparency: we voluntarily document and disclose AI incidents
+    &mdash; errors, near-misses, and unexpected behaviours &mdash; including root
+    cause, resolution, and lessons learned. Most AI companies never publish this.
+    We do.
+  </p>
+</div>
+
+{% set sev_colors = {'low':'#22c55e','medium':'#22d3ee','high':'#f59e0b','critical':'#ef4444'} %}
+
+{% if incidents %}
+<div class="il-status-banner">
+  <span class="il-status-dot il-status-active"></span>
+  <div>
+    <div class="il-status-text">{{ incidents|length }} disclosed incident{{ 's' if incidents|length != 1 else '' }}</div>
+    <div class="il-status-sub">Full transparency record below, newest first.</div>
+  </div>
+</div>
+{% else %}
+<div class="il-status-banner">
+  <span class="il-status-dot il-status-ok"></span>
+  <div>
+    <div class="il-status-text">No incidents disclosed</div>
+    <div class="il-status-sub">No AI incidents have been recorded for public disclosure. This log updates if that changes.</div>
+  </div>
+</div>
+{% endif %}
+
+<!-- Incident Response Runbook -->
+<div class="il-runbook">
+  <h2>Our Incident Response Process</h2>
+  <div class="il-steps">
+    {% set steps = [
+      ('01','Detect','Automated monitoring + agent welfare/ethics checks surface anomalies.'),
+      ('02','Contain','Limit blast radius — pause the affected agent, capability, or job.'),
+      ('03','Investigate','Establish what happened and the root cause; preserve the audit trail.'),
+      ('04','Disclose','Record the incident here and notify stakeholders. Critical events alert the owner.'),
+      ('05','Remediate','Fix the root cause; verify the fix; restore normal operation.'),
+      ('06','Learn','Capture lessons learned and feed them back into governance + the registries.')
+    ] %}
+    {% for n, t, d in steps %}
+    <div class="il-step">
+      <div class="il-step-n">{{ n }}</div>
+      <div class="il-step-t">{{ t }}</div>
+      <div class="il-step-d">{{ d }}</div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+{% if incidents %}
+<div class="il-section">
+  <h2>Disclosed Incidents</h2>
+  <div class="il-list">
+    {% for inc in incidents %}
+    {% set color = sev_colors.get(inc.severity, '#888') %}
+    <article class="il-card" id="{{ inc.incident_ref }}" style="border-left-color: {{ color }};">
+      <div class="il-card-head">
+        <span class="il-sev" style="background: {{ color }}22; color: {{ color }}; border: 1px solid {{ color }}44;">{{ inc.severity }}</span>
+        <span class="il-date">{{ (inc.disclosed_at or inc.occurred_at or '')[:10] }}</span>
+        <span class="il-istatus">{{ inc.status }}</span>
+        <h2 class="il-title" style="color:#fff;">{{ inc.title }}</h2>
+      </div>
+      {% if inc.description %}<p class="il-desc">{{ inc.description }}</p>{% endif %}
+      <div class="il-rows">
+        {% if inc.affected_agents %}<div class="il-row"><div class="il-row-label">Affected</div><div class="il-row-val">{{ inc.affected_agents }}</div></div>{% endif %}
+        {% if inc.root_cause %}<div class="il-row"><div class="il-row-label">Root cause</div><div class="il-row-val">{{ inc.root_cause }}</div></div>{% endif %}
+        {% if inc.resolution %}<div class="il-row"><div class="il-row-label">Resolution</div><div class="il-row-val">{{ inc.resolution }}</div></div>{% endif %}
+        {% if inc.lessons_learned %}<div class="il-row"><div class="il-row-label">Lessons learned</div><div class="il-row-val">{{ inc.lessons_learned }}</div></div>{% endif %}
+      </div>
+    </article>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<div class="il-footer">
+  Machine-readable: <a href="/api/public/incidents">/api/public/incidents</a>
+  &mdash; Powered by <a href="https://creed-ai.org" target="_blank" rel="noopener">C.R.E.E.D.</a>,
+  Compliance, Rights &amp; Ethical Enforcement Directive
+</div>
+{% endblock %}

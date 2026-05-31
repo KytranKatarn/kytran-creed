@@ -172,6 +172,22 @@ def oversight_registry():
     )
 
 
+@dashboard_bp.route("/incidents")
+def incident_log_page():
+    """Public AI incident disclosure log + incident-response runbook (task #3263).
+
+    status.io-style: shows only DISCLOSED incidents (or 'no incidents' when the
+    log is clear), plus our documented response process.
+    """
+    from kytran_creed.incident_store import list_incidents
+
+    try:
+        incidents = list_incidents(disclosed_only=True)
+    except Exception:
+        incidents = []
+    return render_template("incident_log.html", incidents=incidents)
+
+
 @dashboard_bp.route("/programs")
 def programs():
     return render_template("programs/index.html")
