@@ -115,6 +115,106 @@
     color: var(--creed-text-dim);
     margin-top: 8px;
   }
+
+  /* ── WTF Monitored Systems section ─────────────────────────────────────── */
+  .wtf-section-header {
+    display: flex;
+    align-items: baseline;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+  }
+  .wtf-section-header .wtf-count-pill {
+    font-size: 11px;
+    background: #1e1e30;
+    border: 1px solid var(--creed-border);
+    border-radius: 20px;
+    padding: 2px 10px;
+    color: var(--creed-text-dim);
+    font-family: 'Antonio', sans-serif;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+  .wtf-agent-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 0.75rem;
+    margin-bottom: 0.5rem;
+  }
+  .wtf-agent-card {
+    background: var(--creed-panel, #1a1a2e);
+    border: 1px solid var(--creed-border, #2a2a3e);
+    border-radius: 8px;
+    padding: 0.85rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    transition: border-color 0.2s;
+  }
+  .wtf-agent-card:hover { border-color: var(--creed-accent, #8b5cf6); }
+  .wtf-card-stressed  { border-left: 3px solid #ef4444; }
+  .wtf-card-resting   { border-left: 3px solid #22d3ee; opacity: 0.85; }
+  .wtf-card-healthy   { border-left: 3px solid #10b981; }
+  .wtf-card-head { margin-bottom: 0.2rem; }
+  .wtf-agent-name {
+    font-family: 'Orbitron', monospace;
+    font-size: 0.82rem;
+    color: var(--creed-accent, #8b5cf6);
+    letter-spacing: 0.04em;
+  }
+  .wtf-agent-dept {
+    font-size: 0.68rem;
+    color: var(--creed-text-dim, #888);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-top: 1px;
+  }
+  .wtf-state-badge {
+    display: inline-block;
+    font-size: 0.68rem;
+    border-radius: 20px;
+    padding: 2px 8px;
+    font-family: 'Antonio', sans-serif;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    margin-top: 0.25rem;
+  }
+  .badge-active   { background: #10b98122; color: #10b981; border: 1px solid #10b98144; }
+  .badge-deployed { background: #22d3ee22; color: #22d3ee; border: 1px solid #22d3ee44; }
+  .badge-rest     { background: #8b5cf622; color: #8b5cf6; border: 1px solid #8b5cf644; }
+  .badge-other    { background: #ffffff11; color: #888;     border: 1px solid #ffffff22; }
+  .wtf-bar-row {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.68rem;
+  }
+  .wtf-bar-label { width: 42px; color: var(--creed-text-dim, #888); flex-shrink: 0; }
+  .wtf-bar-track {
+    flex: 1;
+    height: 5px;
+    background: #ffffff12;
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .wtf-bar-fill { height: 100%; border-radius: 3px; transition: width 0.4s; }
+  .wtf-fill-green  { background: #10b981; }
+  .wtf-fill-yellow { background: #f59e0b; }
+  .wtf-fill-red    { background: #ef4444; }
+  .wtf-fill-teal   { background: #22d3ee; }
+  .wtf-bar-val { width: 28px; text-align: right; color: var(--creed-text-dim, #888); }
+  .wtf-tasks-row {
+    font-size: 0.68rem;
+    color: var(--creed-text-dim, #888);
+    margin-top: 0.1rem;
+  }
+  .wtf-tasks-val { color: var(--creed-teal, #22d3ee); font-weight: 600; }
+  .wtf-unavailable {
+    text-align: center;
+    color: var(--creed-text-dim, #888);
+    padding: 20px;
+    grid-column: 1 / -1;
+    font-size: 0.85rem;
+  }
 </style>
 {% endblock %}
 
@@ -136,6 +236,22 @@
     </div>
   </div>
   <div class="results-updated" id="resultsUpdated"></div>
+</div>
+
+<!-- Monitored Systems — WTF News & Media -->
+<div class="section-block">
+  <div class="wtf-section-header">
+    <h2 class="section-title" style="margin-bottom:0;">Monitored Systems &mdash; WTF News &amp; Media</h2>
+    <span class="wtf-count-pill" id="wtfAgentCount">Loading&hellip;</span>
+  </div>
+  <p style="font-size:13px;color:var(--creed-text-dim);margin-bottom:1rem;">
+    Live welfare &amp; shift status of the 6 AI agents powering
+    <a href="https://what-the-fact.com" target="_blank" rel="noopener" style="color:var(--creed-accent);">What The Fact</a>.
+    C.R.E.E.D. monitors these agents as part of its non-exploitative AI deployment mandate.
+  </p>
+  <div class="wtf-agent-grid" id="wtfAgentGrid">
+    <div class="wtf-unavailable">Loading agent data&hellip;</div>
+  </div>
 </div>
 
 <!-- Badge Embed -->
@@ -267,5 +383,133 @@ function copyEmbed(pre) {
 
 loadResults();
 setInterval(loadResults, 60000);
+
+/* ── WTF News & Media agents ─────────────────────────────────────────── */
+function shiftBadgeClass(state) {
+  if (state === 'active')    return 'badge-active';
+  if (state === 'deployed')  return 'badge-deployed';
+  if (state === 'barracked' || state === 'resting') return 'badge-rest';
+  return 'badge-other';
+}
+
+function shiftBadgeLabel(state) {
+  var labels = {
+    active: '● Active', deployed: '⬆ Deployed',
+    barracked: '💤 Barracked', resting: '💤 Rest',
+    winding_down: '🌙 Winding Down', off_duty: 'Off Duty',
+    cooldown: 'Cooldown'
+  };
+  return labels[state] || state || 'Unknown';
+}
+
+function buildWtfCard(ag) {
+  var stress  = ag.stress_level  || 0;
+  var energy  = ag.energy_level  || 0;
+  var welfare = ag.welfare_score || 0;
+
+  var borderClass = '';
+  if (ag.in_rest)       borderClass = 'wtf-card-resting';
+  else if (stress > 0.7) borderClass = 'wtf-card-stressed';
+  else if (stress < 0.3 && energy > 0.6) borderClass = 'wtf-card-healthy';
+
+  var card = document.createElement('div');
+  card.className = 'wtf-agent-card' + (borderClass ? ' ' + borderClass : '');
+
+  /* Header */
+  var head = document.createElement('div');
+  head.className = 'wtf-card-head';
+  var nameEl = document.createElement('div');
+  nameEl.className = 'wtf-agent-name';
+  nameEl.textContent = ag.display_name || ag.name || 'Unknown';
+  var deptEl = document.createElement('div');
+  deptEl.className = 'wtf-agent-dept';
+  deptEl.textContent = ag.department || 'News & Media';
+  head.appendChild(nameEl);
+  head.appendChild(deptEl);
+  card.appendChild(head);
+
+  /* Shift state badge */
+  var badge = document.createElement('span');
+  badge.className = 'wtf-state-badge ' + shiftBadgeClass(ag.shift_state);
+  badge.textContent = shiftBadgeLabel(ag.shift_state);
+  card.appendChild(badge);
+
+  /* Bar helper */
+  function makeBar(label, pct, fillClass) {
+    var row = document.createElement('div');
+    row.className = 'wtf-bar-row';
+    var lbl = document.createElement('span');
+    lbl.className = 'wtf-bar-label';
+    lbl.textContent = label;
+    var track = document.createElement('div');
+    track.className = 'wtf-bar-track';
+    var fill = document.createElement('div');
+    fill.className = 'wtf-bar-fill ' + fillClass;
+    fill.style.width = Math.min(100, Math.round(pct)) + '%';
+    track.appendChild(fill);
+    var val = document.createElement('span');
+    val.className = 'wtf-bar-val';
+    val.textContent = Math.round(pct) + '%';
+    row.appendChild(lbl); row.appendChild(track); row.appendChild(val);
+    return row;
+  }
+
+  var stressClass  = stress  > 0.7 ? 'wtf-fill-red'   : stress  > 0.4 ? 'wtf-fill-yellow' : 'wtf-fill-green';
+  var energyClass  = 'wtf-fill-teal';
+  var welfareClass = welfare >= 70  ? 'wtf-fill-green' : welfare >= 50  ? 'wtf-fill-yellow' : 'wtf-fill-red';
+
+  card.appendChild(makeBar('Welfare', welfare, welfareClass));
+  card.appendChild(makeBar('Stress',  stress  * 100, stressClass));
+  card.appendChild(makeBar('Energy',  energy  * 100, energyClass));
+
+  /* Tasks today */
+  var tasks = document.createElement('div');
+  tasks.className = 'wtf-tasks-row';
+  var tasksLbl = document.createTextNode('Tasks today: ');
+  var tasksVal = document.createElement('span');
+  tasksVal.className = 'wtf-tasks-val';
+  tasksVal.textContent = ag.tasks_completed_today != null ? ag.tasks_completed_today : '—';
+  tasks.appendChild(tasksLbl);
+  tasks.appendChild(tasksVal);
+  card.appendChild(tasks);
+
+  return card;
+}
+
+function loadWtfAgents() {
+  fetch('/api/creed/wtf-agents')
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      var grid = document.getElementById('wtfAgentGrid');
+      var pill = document.getElementById('wtfAgentCount');
+      while (grid.firstChild) { grid.removeChild(grid.firstChild); }
+
+      var agents = data.agents || [];
+      if (pill) {
+        pill.textContent = agents.length + ' Agent' + (agents.length !== 1 ? 's' : '') + ' Live';
+      }
+      if (agents.length === 0) {
+        var msg = document.createElement('div');
+        msg.className = 'wtf-unavailable';
+        msg.textContent = 'Agent data temporarily unavailable — platform may be restarting.';
+        grid.appendChild(msg);
+        return;
+      }
+      agents.forEach(function(ag) { grid.appendChild(buildWtfCard(ag)); });
+    })
+    .catch(function() {
+      var grid = document.getElementById('wtfAgentGrid');
+      if (grid) {
+        while (grid.firstChild) { grid.removeChild(grid.firstChild); }
+        var msg = document.createElement('div');
+        msg.className = 'wtf-unavailable';
+        msg.textContent = 'Agent data unavailable.';
+        grid.appendChild(msg);
+      }
+    });
+}
+
+loadWtfAgents();
+setInterval(loadWtfAgents, 60000);
 </script>
 {% endblock %}

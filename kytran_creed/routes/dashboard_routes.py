@@ -9,6 +9,7 @@ from kytran_creed.services.platform_stats import (
     get_ethics_trend,
     get_overflow_activations,
     get_governance_report,
+    get_wtf_agents,
 )
 
 dashboard_bp = Blueprint("dashboard", __name__)
@@ -83,6 +84,46 @@ def mood_journal():
                 agents.append(ag)
     agents.sort(key=lambda a: a.get("stress_level", 0), reverse=True)
     return render_template("mood_journal.html", agents=agents, fleet=fleet)
+
+
+@dashboard_bp.route("/api/creed/wtf-agents")
+def wtf_agents_proxy():
+    """Public server-side proxy for WTF News & Media agent stats.
+
+    Filters fleet-agents to department='News & Media' and returns the 6
+    WTF agents with live welfare/stress/energy stats.  The mesh URL never
+    reaches the browser — this is the only public surface for this data.
+    No login required (matches /results public exemption pattern).
+    """
+    agents = get_wtf_agents()
+    return jsonify({"success": True, "agents": agents, "count": len(agents)})
+
+
+@dashboard_bp.route("/api/ethics/by-department")
+def ethics_by_department():
+    """JSON endpoint — ethics breakdown grouped by department.
+
+    Proxies through the cached platform stats (5-min TTL) so there is no
+    extra network call to the hub.  Returns the ``ethics.by_department``
+    list already computed by DHQ ``public-stats``, sorted worst → best.
+
+    Shape of each item::
+
+        {
+          "department": str,
+          "score": int,        # 0-100
+          "grade": str,        # A+…F
+          "success_rate": float,
+          "high_stress_agents": int,
+          "avg_stress": float,
+          "welfare_status": str  # green | yellow | red
+        }
+    """
+    stats = get_platform_stats()
+    if not stats or not stats.get("success"):
+        return jsonify({"success": False, "error": "Platform unreachable", "by_department": []}), 503
+    by_dept = (stats.get("ethics") or {}).get("by_department", [])
+    return jsonify({"success": True, "by_department": by_dept})
 
 
 @dashboard_bp.route("/programs")

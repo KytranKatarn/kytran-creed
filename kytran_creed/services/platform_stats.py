@@ -104,6 +104,47 @@ def get_overflow_activations():
     return _overflow_cache["data"]
 
 
+_wtf_agents_cache = {"data": None, "expires": 0}
+
+
+def get_wtf_agents():
+    """Return the 6 WTF News & Media agents with live welfare stats.
+
+    Reuses the existing fleet-agents fetch (60s TTL cache) and filters to
+    department == 'News & Media'.  Returns a list of agent dicts; empty list
+    on failure.  The mesh URL never leaves the server — callers proxy this
+    via /api/creed/wtf-agents.
+    """
+    now = time.time()
+    if _wtf_agents_cache["data"] is not None and now < _wtf_agents_cache["expires"]:
+        return _wtf_agents_cache["data"]
+
+    fleet = get_fleet_agents()
+    agents = []
+    if fleet and fleet.get("success"):
+        for node in fleet.get("nodes", []):
+            for ag in node.get("agents", []):
+                if (ag.get("department") or "").strip() == "News & Media":
+                    agents.append(
+                        {
+                            "name": ag.get("name", ""),
+                            "display_name": ag.get("display_name") or ag.get("name", ""),
+                            "department": ag.get("department", "News & Media"),
+                            "shift_state": ag.get("shift_state", "unknown"),
+                            "stress_level": ag.get("stress_level", 0),
+                            "energy_level": ag.get("energy_level", 0),
+                            "welfare_score": ag.get("welfare_score", 0),
+                            "tasks_completed_today": ag.get("tasks_completed_today", 0),
+                            "current_mood": ag.get("current_mood", "neutral"),
+                            "in_rest": bool(ag.get("in_rest")),
+                        }
+                    )
+
+    _wtf_agents_cache["data"] = agents
+    _wtf_agents_cache["expires"] = now + 60  # 60s TTL matches fleet cache
+    return agents
+
+
 def get_governance_report(quarter: str = ""):
     """Return governance report JSON for the given quarter (or latest if blank).
 
