@@ -121,24 +121,33 @@ def get_wtf_agents():
 
     fleet = get_fleet_agents()
     agents = []
+    seen = set()
     if fleet and fleet.get("success"):
         for node in fleet.get("nodes", []):
             for ag in node.get("agents", []):
-                if (ag.get("department") or "").strip() == "News & Media":
-                    agents.append(
-                        {
-                            "name": ag.get("name", ""),
-                            "display_name": ag.get("display_name") or ag.get("name", ""),
-                            "department": ag.get("department", "News & Media"),
-                            "shift_state": ag.get("shift_state", "unknown"),
-                            "stress_level": ag.get("stress_level", 0),
-                            "energy_level": ag.get("energy_level", 0),
-                            "welfare_score": ag.get("welfare_score", 0),
-                            "tasks_completed_today": ag.get("tasks_completed_today", 0),
-                            "current_mood": ag.get("current_mood", "neutral"),
-                            "in_rest": bool(ag.get("in_rest")),
-                        }
-                    )
+                if (ag.get("department") or "").strip() != "News & Media":
+                    continue
+                # fleet-agents lists each agent once per node it is stationed
+                # on; dedup by id (fallback name) so each News & Media agent
+                # renders a single card on the Results page.
+                key = ag.get("id") or ag.get("name")
+                if key in seen:
+                    continue
+                seen.add(key)
+                agents.append(
+                    {
+                        "name": ag.get("name", ""),
+                        "display_name": ag.get("display_name") or ag.get("name", ""),
+                        "department": ag.get("department", "News & Media"),
+                        "shift_state": ag.get("shift_state", "unknown"),
+                        "stress_level": ag.get("stress_level", 0),
+                        "energy_level": ag.get("energy_level", 0),
+                        "welfare_score": ag.get("welfare_score", 0),
+                        "tasks_completed_today": ag.get("tasks_completed_today", 0),
+                        "current_mood": ag.get("current_mood", "neutral"),
+                        "in_rest": bool(ag.get("in_rest")),
+                    }
+                )
 
     _wtf_agents_cache["data"] = agents
     _wtf_agents_cache["expires"] = now + 60  # 60s TTL matches fleet cache
