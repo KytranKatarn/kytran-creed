@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% block title %}Org Directory — C.R.E.E.D.{% endblock %}
+{% block header_title %}Transparency Directory{% endblock %}
+
+{% block head %}
+<style>
+  .lcars-content { max-width: 980px; margin: 0 auto; }
+
+  .od-hero { padding: 32px 4px 12px; }
+  .od-hero h1 {
+    font-family: 'Orbitron', sans-serif; font-size: 30px; font-weight: 900;
+    color: var(--creed-teal); letter-spacing: 1px; margin: 0 0 10px;
+  }
+  .od-hero p { font-size: 14px; line-height: 1.6; color: var(--creed-text-dim); max-width: 760px; }
+  .od-hero a { color: var(--creed-accent); }
+
+  .od-list { display: flex; flex-direction: column; gap: 14px; margin-top: 22px; }
+  .od-card {
+    display: block; text-decoration: none;
+    background: var(--creed-panel); border: 1px solid var(--creed-border);
+    border-left-width: 3px; border-radius: 8px; padding: 18px 20px;
+    transition: border-color 0.15s;
+  }
+  .od-card:hover { border-color: var(--creed-teal); }
+  .od-card-head { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+  .od-name { font-family: 'Orbitron', sans-serif; font-size: 16px; font-weight: 700; color: #fff; }
+  .od-grade {
+    font-family: 'Antonio', sans-serif; font-size: 12px; font-weight: 700;
+    letter-spacing: 1px; padding: 3px 12px; border-radius: 20px; margin-left: auto;
+  }
+  .od-tier {
+    font-family: 'Antonio', sans-serif; font-size: 10px; text-transform: uppercase;
+    letter-spacing: 1px; color: var(--creed-text-dim);
+    background: #ffffff0d; border: 1px solid var(--creed-border);
+    border-radius: 4px; padding: 2px 8px;
+  }
+  .od-meta {
+    display: flex; flex-wrap: wrap; gap: 18px; margin-top: 10px;
+    font-size: 12px; color: var(--creed-text-dim);
+    font-family: 'IBM Plex Mono', monospace;
+  }
+  .od-meta b { color: #c2c7da; font-weight: 600; }
+
+  .od-empty { padding: 40px 0; text-align: center; color: var(--creed-text-dim); }
+  .od-footer { text-align: center; padding: 28px 0 8px; font-size: 12px; color: var(--creed-text-dim); }
+  .od-footer a { color: var(--creed-accent); font-weight: 600; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="od-hero">
+  <h1>Transparency Directory</h1>
+  <p>
+    Organizations whose AI governance is continuously scored on the C.R.E.E.D.
+    pipeline. Every listed score is computed from the organization's own
+    governance event feed against the published methodology &mdash; the same
+    pipeline the Institute scores itself with. Listing is permanent: scores can
+    be delisted, never hidden. New feeds carry a gray <b>PROVISIONAL</b> state
+    until they pass the substance gate
+    (&ge;{{ gate.events }} events &middot; &ge;{{ gate.categories }} categories &middot; &ge;{{ gate.days }} days).
+  </p>
+</div>
+
+{% if orgs %}
+<div class="od-list">
+  {% for o in orgs %}
+  <a class="od-card" href="/org/{{ o.slug }}" style="border-left-color: {{ o.color }};">
+    <div class="od-card-head">
+      <span class="od-name">{{ o.name }}</span>
+      <span class="od-tier">{{ o.tier_label }}</span>
+      <span class="od-grade" style="background: {{ o.color }}22; color: {{ o.color }}; border: 1px solid {{ o.color }}44;">
+        {% if o.provisional %}PROVISIONAL{% else %}{{ o.grade }} ({{ o.overall }}%){% endif %}
+      </span>
+    </div>
+    <div class="od-meta">
+      <span>/org/<b>{{ o.slug }}</b></span>
+      {% if o.country %}<span>{{ o.country }}</span>{% endif %}
+      <span>events 30d: <b>{{ o.events_30d }}</b></span>
+      <span>last reported: <b>{{ o.last_reported }}</b></span>
+    </div>
+  </a>
+  {% endfor %}
+</div>
+{% else %}
+<div class="od-empty">No organizations are publicly listed yet.</div>
+{% endif %}
+
+<div class="od-footer">
+  Machine-readable: <a href="/api/v1/orgs">/api/v1/orgs</a>
+  &mdash; Methodology: <a href="https://creed-ai.org/research.html" target="_blank" rel="noopener">creed-ai.org working papers</a>
+  &mdash; Want your organization scored? <a href="https://creed-ai.org/contact.html" target="_blank" rel="noopener">Contact the Institute</a>
+</div>
+{% endblock %}

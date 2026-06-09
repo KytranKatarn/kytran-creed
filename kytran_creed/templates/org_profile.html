@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+{% block title %}{{ t.name }} — C.R.E.E.D. Transparency Profile{% endblock %}
+{% block header_title %}Transparency Profile{% endblock %}
+
+{% block head %}
+<style>
+  .lcars-content { max-width: 980px; margin: 0 auto; }
+
+  .op-hero { padding: 32px 4px 8px; display: flex; flex-wrap: wrap; align-items: baseline; gap: 12px; }
+  .op-hero h1 {
+    font-family: 'Orbitron', sans-serif; font-size: 28px; font-weight: 900;
+    color: #fff; letter-spacing: 1px; margin: 0;
+  }
+  .op-tier {
+    font-family: 'Antonio', sans-serif; font-size: 11px; text-transform: uppercase;
+    letter-spacing: 1px; color: var(--creed-text-dim);
+    background: #ffffff0d; border: 1px solid var(--creed-border);
+    border-radius: 4px; padding: 3px 10px;
+  }
+  .op-sub { width: 100%; font-size: 13px; color: var(--creed-text-dim); font-family: 'IBM Plex Mono', monospace; }
+  .op-sub a { color: var(--creed-accent); text-decoration: none; }
+
+  .op-grid { display: grid; grid-template-columns: 280px 1fr; gap: 16px; margin-top: 20px; }
+  @media (max-width: 760px) { .op-grid { grid-template-columns: 1fr; } }
+
+  .op-panel {
+    background: var(--creed-panel); border: 1px solid var(--creed-border);
+    border-radius: 8px; padding: 18px 20px;
+  }
+  .op-panel h2 {
+    font-family: 'Antonio', sans-serif; font-size: 12px; text-transform: uppercase;
+    letter-spacing: 1.5px; color: var(--creed-accent); margin: 0 0 12px;
+  }
+
+  .op-score { text-align: center; padding: 28px 20px; }
+  .op-score-big { font-family: 'Orbitron', sans-serif; font-size: 52px; font-weight: 900; line-height: 1; }
+  .op-score-grade { font-family: 'Antonio', sans-serif; font-size: 16px; letter-spacing: 2px; margin-top: 8px; }
+  .op-score-note { font-size: 11.5px; color: var(--creed-text-dim); margin-top: 12px; line-height: 1.5; }
+
+  .op-bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 9px; }
+  .op-bar-label {
+    flex: 0 0 120px; font-family: 'Antonio', sans-serif; font-size: 11px;
+    text-transform: uppercase; letter-spacing: 1px; color: var(--creed-text-dim);
+  }
+  .op-bar-track { flex: 1; height: 8px; background: #ffffff10; border-radius: 4px; overflow: hidden; }
+  .op-bar-fill { height: 100%; border-radius: 4px; }
+  .op-bar-val { flex: 0 0 84px; text-align: right; font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; color: #c2c7da; }
+
+  .op-facts { display: flex; flex-direction: column; gap: 8px; }
+  .op-fact { display: flex; gap: 10px; font-size: 12.5px; }
+  .op-fact-label {
+    flex: 0 0 150px; font-family: 'Antonio', sans-serif; font-size: 11px; text-transform: uppercase;
+    letter-spacing: 1px; color: var(--creed-accent); padding-top: 1px;
+  }
+  .op-fact-val { color: #c2c7da; font-family: 'IBM Plex Mono', monospace; font-size: 12px; }
+
+  .op-embed { margin-top: 16px; }
+  .op-embed img { display: block; margin-bottom: 10px; }
+  .op-embed code {
+    display: block; background: #00000055; border: 1px solid var(--creed-border);
+    border-radius: 6px; padding: 10px 12px; font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px; color: #c2c7da; word-break: break-all;
+  }
+
+  .op-footer { text-align: center; padding: 28px 0 8px; font-size: 12px; color: var(--creed-text-dim); }
+  .op-footer a { color: var(--creed-accent); font-weight: 600; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="op-hero">
+  <h1>{{ t.name }}</h1>
+  <span class="op-tier">{{ tier_label }}</span>
+  <div class="op-sub">
+    /org/{{ t.slug }}
+    {% if t.website %} &middot; <a href="{{ t.website }}" target="_blank" rel="noopener">{{ t.website }}</a>{% endif %}
+    {% if t.country %} &middot; {{ t.country }}{% endif %}
+    {% if t.member_since %} &middot; listed since {{ t.member_since[:10] }}{% endif %}
+  </div>
+</div>
+
+<div class="op-grid">
+  <div class="op-panel op-score">
+    {% if freshness.provisional %}
+      <div class="op-score-big" style="color: #6b7280;">&mdash;</div>
+      <div class="op-score-grade" style="color: #6b7280;">PROVISIONAL</div>
+      <div class="op-score-note">
+        Gate progress: {{ freshness.total_events }}/{{ gate.events }} events &middot;
+        {{ freshness.categories_active }}/{{ gate.categories }} categories &middot;
+        {{ freshness.span_days }}/{{ gate.days }} days.<br>
+        A grade is published once the feed has substance.
+      </div>
+    {% else %}
+      <div class="op-score-big" style="color: {{ color }};">{{ scores.overall }}</div>
+      <div class="op-score-grade" style="color: {{ color }};">GRADE {{ scores.grade }}</div>
+      <div class="op-score-note">{{ scores.event_count }} scored events &middot; trailing 30 days</div>
+    {% endif %}
+  </div>
+
+  <div class="op-panel">
+    <h2>Pillar Breakdown</h2>
+    {% for cat, c in pillars %}
+    <div class="op-bar-row">
+      <div class="op-bar-label">{{ cat }}</div>
+      <div class="op-bar-track"><div class="op-bar-fill" style="width: {{ c.score }}%; background: {{ c.color }};"></div></div>
+      <div class="op-bar-val">{{ c.score }} &middot; {{ c.grade }}</div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <div class="op-panel">
+    <h2>Feed Freshness</h2>
+    <div class="op-facts">
+      <div class="op-fact"><div class="op-fact-label">Last reported</div><div class="op-fact-val">{{ last_reported }}</div></div>
+      <div class="op-fact"><div class="op-fact-label">Events (30 days)</div><div class="op-fact-val">{{ freshness.events_30d }}</div></div>
+      <div class="op-fact"><div class="op-fact-label">Events (all time)</div><div class="op-fact-val">{{ freshness.total_events }}</div></div>
+      <div class="op-fact"><div class="op-fact-label">Active categories</div><div class="op-fact-val">{{ freshness.categories_active }} / 5</div></div>
+      <div class="op-fact"><div class="op-fact-label">Feed span</div><div class="op-fact-val">{{ freshness.span_days }} days</div></div>
+      <div class="op-fact"><div class="op-fact-label">Incidents disclosed</div><div class="op-fact-val">{{ incidents_disclosed }}</div></div>
+      <div class="op-fact"><div class="op-fact-label">Verification</div><div class="op-fact-val">{{ tier_label }}</div></div>
+    </div>
+  </div>
+
+  <div class="op-panel">
+    <h2>Embed This Badge</h2>
+    <div class="op-embed">
+      <img src="/api/v1/badge/{{ t.slug }}/overall" alt="C.R.E.E.D. badge for {{ t.name }}" height="20">
+      <code>&lt;img src="{{ request.host_url }}api/v1/badge/{{ t.slug }}/overall" alt="C.R.E.E.D. transparency badge"&gt;</code>
+    </div>
+  </div>
+</div>
+
+<div class="op-footer">
+  Machine-readable: <a href="/api/v1/orgs/{{ t.slug }}/scores">/api/v1/orgs/{{ t.slug }}/scores</a>
+  &mdash; <a href="/directory">Back to directory</a>
+  &mdash; Methodology: <a href="https://creed-ai.org/research.html" target="_blank" rel="noopener">creed-ai.org working papers</a>
+</div>
+{% endblock %}
