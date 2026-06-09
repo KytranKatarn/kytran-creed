@@ -102,6 +102,13 @@ END $$;
 CREATE INDEX IF NOT EXISTS idx_events_tenant_created ON governance_events(tenant_id, created_at);
 CREATE INDEX IF NOT EXISTS idx_incident_tenant ON incident_log(tenant_id);
 
+-- P2.4 (#3905): self-serve onboarding fields. Applications land as
+-- status='pending'; email verification + admin identity check (D1) gate
+-- activation.
+ALTER TABLE tenants ADD COLUMN IF NOT EXISTS ai_description TEXT;
+ALTER TABLE tenants ADD COLUMN IF NOT EXISTS email_verified BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE tenants ADD COLUMN IF NOT EXISTS verify_token VARCHAR(64);
+
 -- P1.2: org-scoped API keys (Postgres-side; the legacy SQLite api_keys table
 -- was never enforced and stays untouched for single-tenant self-hosters).
 CREATE TABLE IF NOT EXISTS api_keys (
