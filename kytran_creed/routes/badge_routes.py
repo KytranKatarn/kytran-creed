@@ -46,6 +46,7 @@ def get_tenant_badge(slug, badge_type):
             pg.close()
             return jsonify({"error": "unknown org"}), 404
         tenant_id = str(row[0])
+        tier = row[7]
         provisional = _tenant_stats(pg, tenant_id)["provisional"]
         pg.close()
     except Exception:
@@ -55,7 +56,7 @@ def get_tenant_badge(slug, badge_type):
             pass
         return jsonify({"error": "badge unavailable"}), 500
     scores = calculate_scores(_get_recent_events(30, tenant_id))
-    svg = generate_badge(badge_type, scores, provisional=provisional)
+    svg = generate_badge(badge_type, scores, provisional=provisional, tier=tier)
     return Response(
         svg,
         mimetype="image/svg+xml",

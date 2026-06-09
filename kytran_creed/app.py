@@ -47,6 +47,9 @@ def create_app(config=None):
             return
         if request.path.startswith("/api/") or request.path.startswith("/badge/"):
             return
+        # Public multi-tenant pages (task #3894) — no login, no setup gate
+        if request.path == "/directory" or request.path.startswith("/org/"):
+            return
         if setup_required():
             return redirect("/setup")
 

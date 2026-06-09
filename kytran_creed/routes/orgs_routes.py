@@ -17,7 +17,7 @@ Admin (institute, @admin_required):
 import logging
 import re
 
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify, render_template, request
 
 from kytran_creed.auth import admin_required
 from kytran_creed.pg import get_pg
@@ -293,3 +293,144 @@ def list_org_keys(slug):
         except Exception:
             pass
         return jsonify({"success": False, "error": "key list failed"}), 500
+
+
+# ── Public HTML pages (task #3894) ───────────────────────────────────────────
+
+org_pages_bp = Blueprint("org_pages", __name__)
+
+_TIER_LABELS = {
+    "self_reported": "SELF-REPORTED",
+    "signed": "SIGNED",
+    "audited": "AUDITED",
+}
+_GATE = {
+    "events": PROVISIONAL_MIN_EVENTS,
+    "categories": PROVISIONAL_MIN_CATEGORIES,
+    "days": PROVISIONAL_MIN_SPAN_DAYS,
+}
+_PILLARS = ("transparency", "fairness", "safety", "privacy", "accountability")
+
+
+def _grade_color(grade):
+    from kytran_creed.services.badge_service import BADGE_COLORS
+
+    return BADGE_COLORS.get(grade, "#6b7280")
+
+
+def _humanize_last(last_event_at):
+    """'last reported' display — DB timestamps are container-local naive."""
+    if not last_event_at:
+        return "never"
+    from datetime import datetime
+
+    try:
+        delta = datetime.now() - datetime.fromisoformat(last_event_at)
+    except ValueError:
+        return last_event_at
+    mins = int(delta.total_seconds() // 60)
+    if mins < 1:
+        return "just now"
+    if mins < 60:
+        return f"{mins}m ago"
+    if mins < 1440:
+        return f"{mins // 60}h ago"
+    return f"{mins // 1440}d ago"
+
+
+@org_pages_bp.route("/directory")
+def directory_page():
+    pg = get_pg()
+    if not pg:
+        return "Multi-tenant mode requires Postgres", 503
+    try:
+        cur = pg.cursor()
+        cur.execute(
+            f"SELECT {_PUBLIC_FIELDS} FROM tenants WHERE status = 'active' AND listing = 'public' ORDER BY created_at"
+        )
+        rows = cur.fetchall()
+        orgs = []
+        for row in rows:
+            tenant_id = str(row[0])
+            stats = _tenant_stats(pg, tenant_id)
+            scores = calculate_scores(_get_recent_events(30, tenant_id))
+            grade = scores.get("grade")
+            orgs.append(
+                {
+                    "slug": row[1],
+                    "name": row[2],
+                    "country": row[4],
+                    "tier_label": _TIER_LABELS.get(row[7], row[7]),
+                    "provisional": stats["provisional"],
+                    "grade": grade,
+                    "overall": scores.get("overall"),
+                    "color": "#6b7280" if stats["provisional"] else _grade_color(grade),
+                    "events_30d": stats["events_30d"],
+                    "last_reported": _humanize_last(stats["last_event_at"]),
+                }
+            )
+        pg.close()
+        return render_template("org_directory.html", orgs=orgs, gate=_GATE)
+    except Exception as e:
+        logger.error("directory page failed: %s", e)
+        try:
+            pg.close()
+        except Exception:
+            pass
+        return "Directory unavailable", 500
+
+
+@org_pages_bp.route("/org/<slug>")
+def org_profile_page(slug):
+    pg = get_pg()
+    if not pg:
+        return "Multi-tenant mode requires Postgres", 503
+    try:
+        row = _get_public_tenant(pg, slug)
+        if not row:
+            pg.close()
+            return "Unknown organization", 404
+        tenant_id = str(row[0])
+        stats = _tenant_stats(pg, tenant_id)
+        cur = pg.cursor()
+        cur.execute(
+            "SELECT COUNT(*) FROM incident_log WHERE tenant_id = %s AND disclosed", (tenant_id,)
+        )
+        incidents_disclosed = cur.fetchone()[0]
+        pg.close()
+        scores = calculate_scores(_get_recent_events(30, tenant_id))
+        pillars = []
+        for cat in _PILLARS:
+            c = scores.get("by_category", {}).get(cat)
+            if not isinstance(c, dict):
+                c = {"score": c if c is not None else 100.0, "grade": ""}
+            grade = c.get("grade") or "—"
+            pillars.append(
+                (
+                    cat.title(),
+                    {
+                        "score": round(float(c.get("score", 100.0)), 1),
+                        "grade": grade,
+                        "color": _grade_color(grade),
+                    },
+                )
+            )
+        return render_template(
+            "org_profile.html",
+            t=_tenant_row_to_dict(row),
+            scores=scores,
+            pillars=pillars,
+            freshness=stats,
+            gate=_GATE,
+            color=_grade_color(scores.get("grade")),
+            tier_label=_TIER_LABELS.get(row[7], row[7]),
+            last_reported=_humanize_last(stats["last_event_at"]),
+            incidents_disclosed=incidents_disclosed,
+        )
+    except Exception as e:
+        logger.error("org profile failed for %s: %s", slug, e)
+        try:
+            pg.close()
+        except Exception:
+            pass
+        return "Profile unavailable", 500
