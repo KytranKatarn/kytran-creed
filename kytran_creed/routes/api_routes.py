@@ -122,11 +122,15 @@ def api_docs():
 def post_event():
     # P1.2 (#3269): Bearer creed_sk_* key → tenant-scoped ingest. No key =
     # institute fallback (the hub's LAN feed — switches to a key in P2).
-    from kytran_creed.tenant_auth import ingest_guard, resolve_tenant
+    from kytran_creed.tenant_auth import ingest_guard, keyless_rejected, resolve_tenant
 
     tenant_id, auth_err = resolve_tenant()
     if auth_err:
         return auth_err
+    if tenant_id is None:
+        rejected = keyless_rejected()
+        if rejected:
+            return rejected
 
     data = request.get_json(force=True, silent=True) or {}
     event = GovernanceEvent(
@@ -166,11 +170,15 @@ def post_incident():
     import uuid
 
     from kytran_creed.incident_store import SEVERITIES, STATUSES, store_incident
-    from kytran_creed.tenant_auth import resolve_tenant
+    from kytran_creed.tenant_auth import keyless_rejected, resolve_tenant
 
     tenant_id, auth_err = resolve_tenant()
     if auth_err:
         return auth_err
+    if tenant_id is None:
+        rejected = keyless_rejected()
+        if rejected:
+            return rejected
 
     data = request.get_json(force=True, silent=True) or {}
     severity = (data.get("severity") or "").strip().lower()

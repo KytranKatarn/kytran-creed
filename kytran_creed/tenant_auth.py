@@ -128,6 +128,22 @@ def resolve_tenant():
         return None, (jsonify({"success": False, "error": "auth backend unavailable"}), 503)
 
 
+def keyless_rejected():
+    """P2.1 kill-switch for legacy keyless ingest (env REQUIRE_INGEST_KEYS).
+
+    Returns an error response tuple when keyless ingest is disabled, else None.
+    Flip on only AFTER every legitimate writer (the hub feed) sends a key.
+    """
+    import os
+
+    if os.getenv("REQUIRE_INGEST_KEYS", "").lower() in ("1", "true", "yes"):
+        return (
+            jsonify({"success": False, "error": "API key required (Authorization: Bearer creed_sk_…)"}),
+            401,
+        )
+    return None
+
+
 def ingest_guard(description: str, metadata_str: str):
     """PII firewall + metadata cap for key-authenticated (external) ingest.
 
