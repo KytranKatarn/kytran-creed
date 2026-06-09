@@ -79,6 +79,26 @@ def test_keyless_rejected_when_keys_required(client, monkeypatch):
     assert r.status_code == 401
 
 
+def test_get_scored_page_renders(client):
+    r = client.get("/get-scored")
+    assert r.status_code == 200
+    assert b"Apply for scoring" in r.data
+
+
+def test_onboarding_apply_requires_pg(client):
+    r = client.post(
+        "/api/v1/onboarding/apply",
+        json={
+            "slug": "test-org",
+            "name": "Test Org",
+            "website": "https://example.com",
+            "contact_email": "a@example.com",
+            "ai_description": "we run a fleet of helpful AI agents",
+        },
+    )
+    assert r.status_code == 503
+
+
 def test_post_event_keyless_still_works(client):
     """The institute's legacy keyless feed must keep working (P2 retires it)."""
     r = client.post(

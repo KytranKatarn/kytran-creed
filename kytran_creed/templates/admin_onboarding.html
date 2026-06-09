@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% block title %}Onboarding Queue — C.R.E.E.D.{% endblock %}
+{% block header_title %}Onboarding Queue{% endblock %}
+
+{% block head %}
+<style>
+  .lcars-content { max-width: 900px; margin: 0 auto; }
+  .oq-hero { padding: 28px 4px 8px; }
+  .oq-hero h1 { font-family: 'Orbitron', sans-serif; font-size: 24px; font-weight: 900; color: var(--creed-teal); letter-spacing: 1px; margin: 0 0 8px; }
+  .oq-hero p { font-size: 13px; color: var(--creed-text-dim); line-height: 1.6; }
+  .oq-card { background: var(--creed-panel); border: 1px solid var(--creed-border); border-left: 3px solid #f59e0b; border-radius: 8px; padding: 18px 20px; margin-top: 14px; }
+  .oq-head { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+  .oq-name { font-family: 'Orbitron', sans-serif; font-size: 15px; font-weight: 700; color: #fff; }
+  .oq-badge { font-family: 'Antonio', sans-serif; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; padding: 2px 8px; border-radius: 4px; }
+  .oq-meta { font-size: 12px; color: var(--creed-text-dim); font-family: 'IBM Plex Mono', monospace; margin-top: 6px; line-height: 1.7; }
+  .oq-meta a { color: var(--creed-accent); }
+  .oq-desc { font-size: 12.5px; color: #c2c7da; margin-top: 8px; line-height: 1.6; }
+  .oq-actions { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+  .oq-btn { font-family: 'Antonio', sans-serif; font-size: 12px; letter-spacing: 1px; text-transform: uppercase; border-radius: 5px; padding: 7px 14px; cursor: pointer; border: none; }
+  .oq-approve { background: #10b981; color: #04241a; font-weight: 700; }
+  .oq-approve-pub { background: rgba(16,185,129,0.15); color: #34d399; border: 1px solid #10b98155; }
+  .oq-reject { background: rgba(239,68,68,0.12); color: #ef4444; border: 1px solid #ef444455; }
+  .oq-result { margin-top: 10px; font-family: 'IBM Plex Mono', monospace; font-size: 12px; word-break: break-all; display: none; padding: 10px 12px; border-radius: 6px; }
+  .oq-result.ok { display: block; background: rgba(16,185,129,0.1); border: 1px solid #10b98155; color: #34d399; }
+  .oq-result.err { display: block; background: rgba(239,68,68,0.1); border: 1px solid #ef444455; color: #f87171; }
+  .oq-empty { padding: 40px 0; text-align: center; color: var(--creed-text-dim); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="oq-hero">
+  <h1>Pending Applications</h1>
+  <p>
+    D1: verify the organization is real and identifiable (check the website, the
+    contact address's domain, and the description) BEFORE approving. Approval mints
+    the org's first ingest API key — it is shown <b>once</b>, forward it securely
+    to the contact address. Approve as <b>preview</b> (private, default) unless the
+    org has asked to be public immediately.
+  </p>
+</div>
+
+{% if not pending %}<div class="oq-empty">No pending applications.</div>{% endif %}
+
+{% for p in pending %}
+<div class="oq-card" id="card-{{ p.slug }}">
+  <div class="oq-head">
+    <span class="oq-name">{{ p.name }}</span>
+    <span class="oq-badge" style="background:#f59e0b22;color:#f59e0b;border:1px solid #f59e0b44;">PENDING</span>
+    {% if p.email_verified %}
+      <span class="oq-badge" style="background:#10b98122;color:#34d399;border:1px solid #10b98144;">EMAIL VERIFIED</span>
+    {% else %}
+      <span class="oq-badge" style="background:#ef444422;color:#f87171;border:1px solid #ef444444;">EMAIL UNVERIFIED</span>
+    {% endif %}
+  </div>
+  <div class="oq-meta">
+    /org/{{ p.slug }} &middot; <a href="{{ p.website }}" target="_blank" rel="noopener">{{ p.website }}</a>
+    {% if p.country %} &middot; {{ p.country }}{% endif %}
+    &middot; {{ p.contact_email }} &middot; applied {{ p.applied }}
+    {% if p.needs_manual_verify_send %}
+      <br>&#9888; SMTP not configured at apply-time — contact the address above to verify it manually before approving.
+    {% endif %}
+  </div>
+  <div class="oq-desc">{{ p.ai_description }}</div>
+  <div class="oq-actions">
+    <button class="oq-btn oq-approve" onclick="decide('{{ p.slug }}','approve','preview')">&#10003; Approve (preview)</button>
+    <button class="oq-btn oq-approve-pub" onclick="decide('{{ p.slug }}','approve','public')">Approve as public</button>
+    {% if not p.email_verified %}
+    <button class="oq-btn oq-approve-pub" onclick="decide('{{ p.slug }}','verify-link')">Get verify link</button>
+    {% endif %}
+    <button class="oq-btn oq-reject" onclick="decide('{{ p.slug }}','reject')">Reject</button>
+  </div>
+  <div class="oq-result" id="res-{{ p.slug }}"></div>
+</div>
+{% endfor %}
+
+<script>
+async function decide(slug, action, listing) {
+  if (action === 'reject' && !confirm('Reject ' + slug + '? (sets status=suspended)')) return;
+  var out = document.getElementById('res-' + slug);
+  out.className = 'oq-result'; out.style.display = 'block'; out.textContent = '…';
+  try {
+    var r = await fetch('/api/v1/orgs/' + slug + '/' + action, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(listing ? { listing: listing } : {})
+    });
+    var d = await r.json();
+    if (!d.success) { out.className = 'oq-result err'; out.textContent = 'Error: ' + (d.error || action + ' failed'); return; }
+    out.className = 'oq-result ok';
+    if (action === 'approve') {
+      out.textContent = 'APPROVED (' + d.listing + '). API KEY (shown once — forward securely to ' + d.contact_email + '): ' + d.api_key;
+      document.getElementById('card-' + slug).style.opacity = 0.55;
+    } else if (action === 'verify-link') {
+      out.textContent = 'Email this link to ' + d.contact_email + ': ' + d.verify_url;
+    } else {
+      out.textContent = 'Rejected.';
+      document.getElementById('card-' + slug).style.opacity = 0.55;
+    }
+  } catch (e) { out.className = 'oq-result err'; out.textContent = 'Network error: ' + e.message; }
+}
+</script>
+{% endblock %}

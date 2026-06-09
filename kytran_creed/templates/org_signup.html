@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block title %}Get Scored — C.R.E.E.D.{% endblock %}
+{% block header_title %}Get Scored{% endblock %}
+
+{% block head %}
+<style>
+  .lcars-content { max-width: 720px; margin: 0 auto; }
+  .gs-hero { padding: 32px 4px 8px; }
+  .gs-hero h1 { font-family: 'Orbitron', sans-serif; font-size: 28px; font-weight: 900; color: var(--creed-teal); letter-spacing: 1px; margin: 0 0 10px; }
+  .gs-hero p { font-size: 13.5px; line-height: 1.6; color: var(--creed-text-dim); }
+  .gs-hero a { color: var(--creed-accent); }
+  .gs-form { background: var(--creed-panel); border: 1px solid var(--creed-border); border-radius: 8px; padding: 22px; margin-top: 18px; }
+  .gs-field { margin-bottom: 14px; }
+  .gs-field label { display: block; font-family: 'Antonio', sans-serif; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--creed-accent); margin-bottom: 5px; }
+  .gs-field input, .gs-field textarea {
+    width: 100%; background: #00000040; border: 1px solid var(--creed-border); border-radius: 6px;
+    color: #e6e9f2; padding: 9px 11px; font-family: 'IBM Plex Mono', monospace; font-size: 13px;
+  }
+  .gs-field textarea { min-height: 90px; resize: vertical; }
+  .gs-hint { font-size: 11px; color: var(--creed-text-dim); margin-top: 4px; }
+  .gs-submit { font-family: 'Antonio', sans-serif; letter-spacing: 1px; text-transform: uppercase;
+    background: var(--creed-teal); color: #04242a; border: none; border-radius: 6px; padding: 10px 22px; cursor: pointer; font-size: 13px; font-weight: 700; }
+  .gs-result { margin-top: 14px; padding: 12px 14px; border-radius: 6px; font-size: 13px; display: none; }
+  .gs-result.ok { background: rgba(16,185,129,0.12); border: 1px solid #10b98155; color: #34d399; }
+  .gs-result.err { background: rgba(239,68,68,0.12); border: 1px solid #ef444455; color: #f87171; }
+  .gs-rules { margin-top: 18px; font-size: 12px; color: var(--creed-text-dim); line-height: 1.7; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="gs-hero">
+  <h1>Get Your AI Governance Scored</h1>
+  <p>
+    Apply to join the <a href="/directory">Transparency Directory</a>. After email
+    verification and an identity review (real, identifiable organizations only),
+    the Institute issues your ingest API key. Emit the
+    <a href="https://creed-ai.org/standard.html" target="_blank" rel="noopener">C.R.E.E.D. Event Schema</a>
+    from your AI systems and your public score computes continuously. Free for up to
+    50,000 events/day &mdash; free forever for nonprofits.
+  </p>
+</div>
+
+<form class="gs-form" id="gsForm">
+  <div class="gs-field"><label>Organization name</label><input name="name" maxlength="200" required></div>
+  <div class="gs-field"><label>Slug (your public URL: /org/&lt;slug&gt;)</label><input name="slug" pattern="[a-z0-9][a-z0-9-]{1,78}[a-z0-9]" placeholder="acme-ai" required>
+    <div class="gs-hint">lowercase letters, digits, hyphens — permanent once listed</div></div>
+  <div class="gs-field"><label>Website</label><input name="website" type="url" placeholder="https://example.com" required></div>
+  <div class="gs-field"><label>Country</label><input name="country" maxlength="80"></div>
+  <div class="gs-field"><label>Contact email</label><input name="contact_email" type="email" required>
+    <div class="gs-hint">verification link is sent here; your API key follows on approval</div></div>
+  <div class="gs-field"><label>What do your AI systems do?</label><textarea name="ai_description" minlength="20" maxlength="2000" required></textarea></div>
+  <button class="gs-submit" type="submit">Apply for scoring</button>
+  <div class="gs-result" id="gsResult"></div>
+</form>
+
+<div class="gs-rules">
+  By applying you accept the rules of the feed: events describe <b>systems, never people</b>
+  (no personal data); once publicly listed, scores can be <b>delisted but never hidden</b>
+  (90-day private preview for new orgs); new feeds are <b>PROVISIONAL</b> until they pass the
+  substance gate. Methodology: <a href="https://creed-ai.org/research.html" target="_blank" rel="noopener" style="color: var(--creed-accent);">working papers WP-001&hellip;WP-007</a>.
+</div>
+
+<script>
+document.getElementById('gsForm').addEventListener('submit', async function (e) {
+  e.preventDefault();
+  var f = e.target, out = document.getElementById('gsResult');
+  var body = {};
+  new FormData(f).forEach(function (v, k) { body[k] = v; });
+  out.style.display = 'block'; out.className = 'gs-result'; out.textContent = 'Submitting…';
+  try {
+    var r = await fetch('/api/v1/onboarding/apply', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
+    });
+    var d = await r.json();
+    out.className = 'gs-result ' + (d.success ? 'ok' : 'err');
+    out.textContent = d.success
+      ? 'Application received for /org/' + d.slug + '. ' + d.next
+      : 'Error: ' + (d.error || 'application failed');
+    if (d.success) f.querySelector('.gs-submit').disabled = true;
+  } catch (err) {
+    out.className = 'gs-result err'; out.textContent = 'Network error: ' + err.message;
+  }
+});
+</script>
+{% endblock %}
