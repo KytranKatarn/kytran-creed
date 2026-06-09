@@ -101,6 +101,20 @@ END $$;
 
 CREATE INDEX IF NOT EXISTS idx_events_tenant_created ON governance_events(tenant_id, created_at);
 CREATE INDEX IF NOT EXISTS idx_incident_tenant ON incident_log(tenant_id);
+
+-- P1.2: org-scoped API keys (Postgres-side; the legacy SQLite api_keys table
+-- was never enforced and stays untouched for single-tenant self-hosters).
+CREATE TABLE IF NOT EXISTS api_keys (
+    id SERIAL PRIMARY KEY,
+    tenant_id UUID NOT NULL REFERENCES tenants(id),
+    key_hash VARCHAR(64) UNIQUE NOT NULL,
+    label VARCHAR(120),
+    scopes VARCHAR(40) NOT NULL DEFAULT 'ingest',
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT NOW(),
+    last_used_at TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_api_keys_tenant ON api_keys(tenant_id);
 """
 
 
