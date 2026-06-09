@@ -1,0 +1,273 @@
+{% extends "base.html" %}
+{% block title %}{{ name }} — Org Dashboard — C.R.E.E.D.{% endblock %}
+{% block header_title %}Org Dashboard{% endblock %}
+
+{% block head %}
+<style>
+  .td-wrap { max-width: 960px; margin: 0 auto; }
+  .td-hero { padding: 24px 4px 16px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+  .td-hero-name { font-family: 'Orbitron', sans-serif; font-size: 20px; font-weight: 900; color: var(--creed-teal); letter-spacing: 1px; }
+  .td-hero-slug { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--creed-text-dim); margin-top: 3px; }
+  .td-logout { font-family: 'Antonio', sans-serif; font-size: 11px; letter-spacing: 1px; text-transform: uppercase; color: var(--creed-text-dim); padding: 6px 12px; border: 1px solid var(--creed-border); border-radius: 5px; text-decoration: none; transition: color 0.2s, border-color 0.2s; }
+  .td-logout:hover { color: #ef4444; border-color: #ef444466; }
+
+  /* Score row */
+  .td-score-row { display: flex; gap: 14px; margin-bottom: 18px; flex-wrap: wrap; }
+  .td-score-card { background: var(--creed-panel); border: 1px solid var(--creed-border); border-radius: 8px; padding: 16px 20px; flex: 1; min-width: 140px; }
+  .td-score-label { font-family: 'Antonio', sans-serif; font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: var(--creed-text-dim); margin-bottom: 6px; }
+  .td-score-val { font-family: 'Orbitron', sans-serif; font-size: 26px; font-weight: 900; color: var(--creed-teal); }
+  .td-score-grade { font-family: 'Orbitron', sans-serif; font-size: 26px; font-weight: 900; }
+  .td-score-sub { font-size: 11px; color: var(--creed-text-dim); margin-top: 4px; }
+
+  /* Provisional banner */
+  .td-prov { background: rgba(245,158,11,0.08); border: 1px solid #f59e0b55; border-radius: 8px; padding: 12px 16px; margin-bottom: 18px; display: flex; align-items: flex-start; gap: 10px; }
+  .td-prov-icon { color: #f59e0b; font-size: 18px; line-height: 1; }
+  .td-prov-text { font-size: 12.5px; color: #fcd34d; line-height: 1.6; }
+  .td-prov-text b { color: #fbbf24; }
+
+  /* Section */
+  .td-section { margin-bottom: 24px; }
+  .td-section-title { font-family: 'Antonio', sans-serif; font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: var(--creed-text-dim); margin-bottom: 10px; padding-bottom: 6px; border-bottom: 1px solid var(--creed-border); }
+
+  /* Category scores */
+  .td-cats { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; }
+  .td-cat { background: var(--creed-panel); border: 1px solid var(--creed-border); border-radius: 7px; padding: 12px 14px; }
+  .td-cat-name { font-family: 'Antonio', sans-serif; font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: var(--creed-text-dim); margin-bottom: 4px; }
+  .td-cat-score { font-family: 'Orbitron', sans-serif; font-size: 18px; font-weight: 700; }
+  .td-cat-bar { height: 3px; border-radius: 2px; background: var(--creed-border); margin-top: 8px; }
+  .td-cat-fill { height: 3px; border-radius: 2px; }
+
+  /* Events table */
+  .td-table-wrap { overflow-x: auto; }
+  .td-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .td-table th { font-family: 'Antonio', sans-serif; font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: var(--creed-text-dim); text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--creed-border); }
+  .td-table td { padding: 8px 10px; border-bottom: 1px solid rgba(255,255,255,0.04); color: #c2c7da; font-family: 'IBM Plex Mono', monospace; vertical-align: top; }
+  .td-table tr:hover td { background: rgba(255,255,255,0.025); }
+  .td-sev { display: inline-block; padding: 1px 6px; border-radius: 4px; font-size: 10px; font-family: 'Antonio', sans-serif; letter-spacing: 1px; text-transform: uppercase; }
+  .sev-info     { background: rgba(99,179,237,0.12); color: #63b3ed; }
+  .sev-warning  { background: rgba(245,158,11,0.12); color: #f59e0b; }
+  .sev-violation{ background: rgba(239,68,68,0.12); color: #ef4444; }
+  .sev-critical { background: rgba(239,68,68,0.22); color: #f87171; border: 1px solid #ef444444; }
+  .td-desc { max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  /* Keys */
+  .td-key-row { background: var(--creed-panel); border: 1px solid var(--creed-border); border-radius: 7px; padding: 12px 16px; margin-bottom: 8px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .td-key-info { flex: 1; min-width: 180px; }
+  .td-key-id { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--creed-text-dim); }
+  .td-key-meta { font-size: 11px; color: var(--creed-text-dim); margin-top: 3px; }
+  .td-key-active { display: inline-block; padding: 2px 7px; border-radius: 4px; font-family: 'Antonio', sans-serif; font-size: 10px; letter-spacing: 1px; }
+  .td-key-active.yes { background: rgba(16,185,129,0.1); color: #34d399; border: 1px solid #10b98144; }
+  .td-key-active.no  { background: rgba(239,68,68,0.1); color: #f87171; border: 1px solid #ef444444; }
+  .td-revoke-btn { font-family: 'Antonio', sans-serif; font-size: 11px; letter-spacing: 1px; text-transform: uppercase; background: rgba(239,68,68,0.1); color: #ef4444; border: 1px solid #ef444455; border-radius: 5px; padding: 5px 10px; cursor: pointer; }
+  .td-revoke-btn:hover { background: rgba(239,68,68,0.2); }
+  .td-revoke-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .td-mint-btn { font-family: 'Antonio', sans-serif; font-size: 12px; letter-spacing: 1px; text-transform: uppercase; background: var(--creed-teal); color: #031a18; border: none; border-radius: 6px; padding: 8px 16px; cursor: pointer; font-weight: 700; margin-top: 10px; }
+  .td-mint-btn:hover { opacity: 0.85; }
+
+  /* New key reveal */
+  .td-new-key { display: none; margin-top: 12px; background: rgba(16,185,129,0.06); border: 1px solid #10b98155; border-radius: 7px; padding: 14px 16px; }
+  .td-new-key.show { display: block; }
+  .td-new-key-label { font-family: 'Antonio', sans-serif; font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: #34d399; margin-bottom: 6px; }
+  .td-new-key-val { font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #e8ecf4; word-break: break-all; }
+  .td-new-key-warn { font-size: 11px; color: #f59e0b; margin-top: 8px; }
+
+  /* Error */
+  .td-error { background: rgba(239,68,68,0.08); border: 1px solid #ef444455; border-radius: 8px; color: #f87171; font-family: 'IBM Plex Mono', monospace; font-size: 12px; padding: 16px; margin-top: 20px; }
+  .td-empty { color: var(--creed-text-dim); font-size: 12px; font-family: 'IBM Plex Mono', monospace; padding: 12px 0; }
+
+  /* Score colour helpers */
+  .sc-green  { color: #10b981; }
+  .sc-blue   { color: #63b3ed; }
+  .sc-yellow { color: #f59e0b; }
+  .sc-red    { color: #ef4444; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="td-wrap">
+
+  <div class="td-hero">
+    <div>
+      <div class="td-hero-name">{{ name }}</div>
+      <div class="td-hero-slug">@{{ slug }}</div>
+    </div>
+    <a class="td-logout" href="/org-admin/logout">Sign Out</a>
+  </div>
+
+  {% if error %}
+  <div class="td-error">Dashboard unavailable: {{ error }}</div>
+  {% elif data %}
+
+  {# ── Score row ── #}
+  {% set s = data.score_data %}
+  {% set grade = s.grade %}
+  {% set grade_color = 'sc-green' if grade in ('A+','A') else ('sc-blue' if grade == 'B+' else ('sc-yellow' if grade in ('B','C') else 'sc-red')) %}
+  <div class="td-score-row">
+    <div class="td-score-card">
+      <div class="td-score-label">Overall Score</div>
+      {% if data.provisional %}
+      <div class="td-score-val" style="color:#6b7280">—</div>
+      <div class="td-score-sub">Provisional</div>
+      {% else %}
+      <div class="td-score-val">{{ s.overall }}</div>
+      <div class="td-score-sub td-score-grade {{ grade_color }}">{{ grade }}</div>
+      {% endif %}
+    </div>
+    <div class="td-score-card">
+      <div class="td-score-label">Total Events</div>
+      <div class="td-score-val" style="font-size:22px">{{ data.event_count }}</div>
+      <div class="td-score-sub">{{ data.events_30d }} in last 30d</div>
+    </div>
+    <div class="td-score-card">
+      <div class="td-score-label">Last Event</div>
+      {% if data.last_event %}
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#e8ecf4;margin-top:4px">
+        {{ data.last_event.strftime('%Y-%m-%d') if data.last_event else '—' }}
+      </div>
+      <div class="td-score-sub">{{ data.last_event.strftime('%H:%M UTC') if data.last_event else '' }}</div>
+      {% else %}
+      <div class="td-empty">No events yet</div>
+      {% endif %}
+    </div>
+    <div class="td-score-card">
+      <div class="td-score-label">Open Incidents</div>
+      <div class="td-score-val" style="font-size:22px;{% if data.open_incidents > 0 %}color:#ef4444{% endif %}">{{ data.open_incidents }}</div>
+      <div class="td-score-sub">requiring attention</div>
+    </div>
+  </div>
+
+  {# ── Provisional banner ── #}
+  {% if data.provisional %}
+  <div class="td-prov">
+    <span class="td-prov-icon">⚠</span>
+    <div class="td-prov-text">
+      <b>PROVISIONAL</b> — Score hidden until the feed meets minimum thresholds.
+      Still needed: {{ data.provisional_gaps | join(', ') }}.
+      Keep ingesting events across all five categories (transparency, fairness, safety, privacy, accountability).
+    </div>
+  </div>
+  {% endif %}
+
+  {# ── Per-category scores ── #}
+  <div class="td-section">
+    <div class="td-section-title">Scores by Pillar</div>
+    <div class="td-cats">
+      {% for cat, score in s.by_category.items() %}
+      {% set pct = score | float %}
+      {% set fill = '#10b981' if pct >= 85 else ('#63b3ed' if pct >= 70 else ('#f59e0b' if pct >= 50 else '#ef4444')) %}
+      <div class="td-cat">
+        <div class="td-cat-name">{{ cat }}</div>
+        {% if data.provisional %}
+        <div class="td-cat-score" style="color:#6b7280;font-size:14px">—</div>
+        {% else %}
+        <div class="td-cat-score" style="color:{{ fill }}">{{ pct }}</div>
+        {% endif %}
+        <div class="td-cat-bar"><div class="td-cat-fill" style="width:{{ pct }}%;background:{{ fill }}"></div></div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  {# ── Recent events ── #}
+  <div class="td-section">
+    <div class="td-section-title">Recent Events (last 10)</div>
+    {% if data.recent_events %}
+    <div class="td-table-wrap">
+      <table class="td-table">
+        <thead>
+          <tr>
+            <th>Category</th>
+            <th>Severity</th>
+            <th>Type</th>
+            <th>Source</th>
+            <th>Description</th>
+            <th>Time</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for ev in data.recent_events %}
+          <tr>
+            <td>{{ ev.category }}</td>
+            <td><span class="td-sev sev-{{ ev.severity }}">{{ ev.severity }}</span></td>
+            <td>{{ ev.event_type }}</td>
+            <td>{{ ev.source_platform }}</td>
+            <td class="td-desc" title="{{ ev.description | e }}">{{ ev.description }}</td>
+            <td>{{ ev.created_at.strftime('%m-%d %H:%M') if ev.created_at else '' }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="td-empty">No events yet. Start ingesting via <code style="color:var(--creed-teal)">POST /api/v1/events</code> with your API key.</div>
+    {% endif %}
+  </div>
+
+  {# ── API keys ── #}
+  <div class="td-section">
+    <div class="td-section-title">API Keys</div>
+
+    {% if data.keys %}
+      {% for k in data.keys %}
+      <div class="td-key-row" id="key-row-{{ k.id }}">
+        <div class="td-key-info">
+          <div class="td-key-id">…{{ k.id[-8:] }}</div>
+          <div class="td-key-meta">
+            scope: {{ k.scopes or 'ingest' }} ·
+            created {{ k.created_at.strftime('%Y-%m-%d') if k.created_at else '—' }} ·
+            last used {{ k.last_used_at.strftime('%Y-%m-%d') if k.last_used_at else 'never' }}
+          </div>
+        </div>
+        <span class="td-key-active {{ 'yes' if k.is_active else 'no' }}">{{ 'ACTIVE' if k.is_active else 'REVOKED' }}</span>
+        {% if k.is_active %}
+        <button class="td-revoke-btn" id="revoke-{{ k.id }}" onclick="revokeKey('{{ k.id }}')">Revoke</button>
+        {% endif %}
+      </div>
+      {% endfor %}
+    {% else %}
+    <div class="td-empty">No API keys. Mint one below.</div>
+    {% endif %}
+
+    <button class="td-mint-btn" onclick="mintKey()">+ Generate New Key</button>
+    <div class="td-new-key" id="new-key-box">
+      <div class="td-new-key-label">New API Key — copy now, never shown again</div>
+      <div class="td-new-key-val" id="new-key-val"></div>
+      <div class="td-new-key-warn">⚠ Store this securely. It cannot be retrieved after you leave this page.</div>
+    </div>
+  </div>
+
+  {% endif %}{# end data #}
+</div>
+
+<script>
+function mintKey() {
+  fetch('/org-admin/api/keys', {method: 'POST', headers: {'Content-Type': 'application/json'}})
+    .then(r => r.json())
+    .then(d => {
+      if (d.success) {
+        document.getElementById('new-key-val').textContent = d.key;
+        document.getElementById('new-key-box').classList.add('show');
+        setTimeout(() => location.reload(), 4000);
+      } else {
+        alert('Error minting key: ' + (d.error || 'unknown'));
+      }
+    });
+}
+
+function revokeKey(id) {
+  if (!confirm('Revoke this key? Any integrations using it will stop ingesting.')) return;
+  const btn = document.getElementById('revoke-' + id);
+  if (btn) btn.disabled = true;
+  fetch('/org-admin/api/keys/' + id + '/revoke', {method: 'POST'})
+    .then(r => r.json())
+    .then(d => {
+      if (d.success) {
+        location.reload();
+      } else {
+        alert('Error: ' + (d.error || 'unknown'));
+        if (btn) btn.disabled = false;
+      }
+    });
+}
+</script>
+{% endblock %}

@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block title %}Org Admin Login — C.R.E.E.D.{% endblock %}
+{% block header_title %}Org Admin Portal{% endblock %}
+
+{% block head %}
+<style>
+  .tl-wrap { max-width: 480px; margin: 60px auto 0; }
+  .tl-card { background: var(--creed-panel); border: 1px solid var(--creed-border); border-top: 3px solid var(--creed-teal); border-radius: 8px; padding: 32px 28px; }
+  .tl-title { font-family: 'Orbitron', sans-serif; font-size: 20px; font-weight: 900; color: var(--creed-teal); letter-spacing: 1px; margin: 0 0 6px; }
+  .tl-sub { font-size: 13px; color: var(--creed-text-dim); margin-bottom: 24px; line-height: 1.6; }
+  .tl-label { display: block; font-family: 'Antonio', sans-serif; font-size: 11px; letter-spacing: 1px; text-transform: uppercase; color: var(--creed-text-dim); margin-bottom: 6px; }
+  .tl-input { width: 100%; box-sizing: border-box; background: rgba(255,255,255,0.04); border: 1px solid var(--creed-border); border-radius: 6px; color: #e8ecf4; font-family: 'IBM Plex Mono', monospace; font-size: 13px; padding: 10px 12px; outline: none; transition: border-color 0.2s; }
+  .tl-input:focus { border-color: var(--creed-teal); }
+  .tl-btn { width: 100%; margin-top: 18px; background: var(--creed-teal); color: #031a18; font-family: 'Antonio', sans-serif; font-size: 14px; letter-spacing: 1px; text-transform: uppercase; font-weight: 700; border: none; border-radius: 6px; padding: 12px; cursor: pointer; transition: opacity 0.15s; }
+  .tl-btn:hover { opacity: 0.85; }
+  .tl-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .tl-err { margin-top: 14px; background: rgba(239,68,68,0.1); border: 1px solid #ef444455; border-radius: 6px; color: #f87171; font-family: 'IBM Plex Mono', monospace; font-size: 12px; padding: 10px 12px; display: none; }
+  .tl-hint { margin-top: 16px; font-size: 12px; color: var(--creed-text-dim); text-align: center; }
+  .tl-hint a { color: var(--creed-accent); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="tl-wrap">
+  <div class="tl-card">
+    <div class="tl-title">Organisation Portal</div>
+    <p class="tl-sub">
+      Sign in with your C.R.E.E.D. ingest API key (<code style="color:var(--creed-teal);font-size:11px;">creed_sk_…</code>)
+      to view your governance score, event log, and key management.
+    </p>
+
+    <label class="tl-label" for="api-key">API Key</label>
+    <input class="tl-input" id="api-key" type="password" placeholder="creed_sk_…" autocomplete="current-password" />
+
+    <button class="tl-btn" id="login-btn" onclick="doLogin()">Sign In</button>
+    <div class="tl-err" id="login-err"></div>
+
+    <div class="tl-hint">
+      Don't have a key yet?
+      <a href="/get-scored">Apply to get scored</a>.
+    </div>
+  </div>
+</div>
+
+<script>
+function doLogin() {
+  const key = document.getElementById('api-key').value.trim();
+  const btn = document.getElementById('login-btn');
+  const err = document.getElementById('login-err');
+  err.style.display = 'none';
+  if (!key) { showErr('Please enter your API key.'); return; }
+  if (!key.startsWith('creed_sk_')) { showErr('Key must start with creed_sk_'); return; }
+  btn.disabled = true;
+  btn.textContent = 'Signing in…';
+  fetch('/org-admin/login', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({api_key: key})
+  })
+  .then(r => r.json())
+  .then(d => {
+    if (d.success) {
+      window.location.href = '/org-admin/dashboard';
+    } else {
+      showErr(d.error || 'Login failed');
+      btn.disabled = false;
+      btn.textContent = 'Sign In';
+    }
+  })
+  .catch(() => {
+    showErr('Network error — please try again');
+    btn.disabled = false;
+    btn.textContent = 'Sign In';
+  });
+}
+function showErr(msg) {
+  const el = document.getElementById('login-err');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+document.getElementById('api-key').addEventListener('keydown', e => {
+  if (e.key === 'Enter') doLogin();
+});
+</script>
+{% endblock %}
