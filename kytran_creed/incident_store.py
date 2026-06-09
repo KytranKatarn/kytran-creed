@@ -25,6 +25,9 @@ _INSERT_COLS = (
 )
 
 
+_SQLITE_INSTITUTE_TENANT = "00000000-0000-0000-0000-000000000001"
+
+
 def store_incident(
     incident_ref,
     severity,
@@ -36,8 +39,13 @@ def store_incident(
     status="investigating",
     lessons_learned="",
     disclosed=False,
+    tenant_id=None,
 ):
-    """Insert an incident. Returns the new row id (or None on failure)."""
+    """Insert an incident. Returns the new row id (or None on failure).
+
+    tenant_id None = institute (PG column DEFAULT / SQLite fixed UUID) —
+    task #3269 P1.2.
+    """
     disclosed_at_sql = "NOW()" if disclosed else "NULL"
     vals = (
         incident_ref, severity, title, description, affected_agents, root_cause,
@@ -47,12 +55,20 @@ def store_incident(
     if pg:
         try:
             cur = pg.cursor()
-            cur.execute(
-                f"""INSERT INTO incident_log ({_INSERT_COLS})
-                    VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,{disclosed_at_sql})
-                    RETURNING id""",
-                vals,
-            )
+            if tenant_id:
+                cur.execute(
+                    f"""INSERT INTO incident_log ({_INSERT_COLS}, tenant_id)
+                        VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,{disclosed_at_sql},%s)
+                        RETURNING id""",
+                    vals + (tenant_id,),
+                )
+            else:
+                cur.execute(
+                    f"""INSERT INTO incident_log ({_INSERT_COLS})
+                        VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,{disclosed_at_sql})
+                        RETURNING id""",
+                    vals,
+                )
             row = cur.fetchone()
             pg.commit()
             pg.close()
@@ -68,9 +84,9 @@ def store_incident(
     try:
         sqlite_disclosed_at = "CURRENT_TIMESTAMP" if disclosed else "NULL"
         cur = conn.execute(
-            f"""INSERT INTO incident_log ({_INSERT_COLS})
-                VALUES (?,?,?,?,?,?,?,?,?,?,{sqlite_disclosed_at})""",
-            vals,
+            f"""INSERT INTO incident_log ({_INSERT_COLS}, tenant_id)
+                VALUES (?,?,?,?,?,?,?,?,?,?,{sqlite_disclosed_at},?)""",
+            vals + (tenant_id or _SQLITE_INSTITUTE_TENANT,),
         )
         conn.commit()
         return cur.lastrowid
