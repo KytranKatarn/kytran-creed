@@ -18,7 +18,7 @@ pip install "creed-client @ git+https://github.com/KytranKatarn/kytran-creed.git
 from creed_client import CreedClient
 
 creed = CreedClient(
-    base_url="https://creed.kytranempowerment.com",
+    base_url="https://api.creed-ai.org",
     api_key="creed_sk_...",   # issued when your org is onboarded
 )
 

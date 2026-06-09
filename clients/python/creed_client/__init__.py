@@ -7,7 +7,7 @@ your public scores. Implements C.R.E.E.D. Event Schema v1 (ADR-004).
     from creed_client import CreedClient
 
     creed = CreedClient(
-        base_url="https://creed.kytranempowerment.com",
+        base_url="https://api.creed-ai.org",
         api_key="creed_sk_...",          # tenant-scoped ingest key
     )
     creed.emit_event(
