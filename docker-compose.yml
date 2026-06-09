@@ -50,6 +50,9 @@ services:
       DB_NAME: creed
       DB_USER: creed
       DB_PASSWORD_FILE: /run/secrets/db_password
+      # P2.1 (#3902): keyless ingest disabled — every writer (incl. the hub
+      # feed) authenticates with a tenant API key. Verified before enabling.
+      REQUIRE_INGEST_KEYS: "true"
     volumes:
       - ./data:/data
     secrets:

@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "creed-client"
+version = "0.1.0"
+description = "Official Python client for the C.R.E.E.D. transparency API (Event Schema v1)"
+readme = "README.md"
+license = { text = "MIT" }
+authors = [{ name = "C.R.E.E.D. Institute", email = "info@creed-ai.org" }]
+requires-python = ">=3.9"
+dependencies = []
+keywords = ["ai-governance", "transparency", "creed", "ethics", "audit"]
+
+[project.urls]
+Homepage = "https://creed-ai.org"
+Source = "https://github.com/KytranKatarn/kytran-creed"
+
+[tool.setuptools.packages.find]
+include = ["creed_client*"]

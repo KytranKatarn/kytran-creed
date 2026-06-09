@@ -62,6 +62,23 @@ def test_post_event_with_invalid_bearer_rejected(client):
     assert r.status_code == 401
 
 
+def test_keyless_rejected_when_keys_required(client, monkeypatch):
+    """P2.1 kill-switch: REQUIRE_INGEST_KEYS=true → keyless ingest 401."""
+    monkeypatch.setenv("REQUIRE_INGEST_KEYS", "true")
+    r = client.post(
+        "/api/v1/events",
+        json={
+            "event_type": "test",
+            "source_platform": "pytest",
+            "agent_id": "t1",
+            "category": "safety",
+            "severity": "info",
+            "description": "should be rejected",
+        },
+    )
+    assert r.status_code == 401
+
+
 def test_post_event_keyless_still_works(client):
     """The institute's legacy keyless feed must keep working (P2 retires it)."""
     r = client.post(
