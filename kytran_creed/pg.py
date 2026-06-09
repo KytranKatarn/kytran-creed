@@ -46,6 +46,63 @@ CREATE INDEX IF NOT EXISTS idx_incident_disclosed ON incident_log(disclosed, dis
 CREATE INDEX IF NOT EXISTS idx_incident_severity ON incident_log(severity);
 """
 
+INSTITUTE_SLUG = "creed-institute"
+
+# Multi-tenant migration (task #3269 P1.1, ADR-004). Idempotent — runs on every
+# startup after SCHEMA. The Institute itself is tenant #1 on the same pipeline.
+# tenant_id gets a column DEFAULT of the institute tenant's UUID so existing
+# single-tenant ingest paths (which don't pass tenant_id) keep working until
+# P1.2 makes API-key-scoped inserts explicit.
+TENANT_MIGRATION = """
+CREATE TABLE IF NOT EXISTS tenants (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    slug VARCHAR(80) UNIQUE NOT NULL,
+    name VARCHAR(200) NOT NULL,
+    website VARCHAR(300),
+    country VARCHAR(80),
+    contact_email VARCHAR(200) NOT NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'pending',
+    listing VARCHAR(20) NOT NULL DEFAULT 'preview',
+    verification_tier VARCHAR(20) NOT NULL DEFAULT 'self_reported',
+    plan VARCHAR(20) NOT NULL DEFAULT 'free',
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+INSERT INTO tenants (slug, name, website, country, contact_email, status, listing, verification_tier)
+VALUES ('creed-institute', 'C.R.E.E.D. Institute', 'https://creed-ai.org', 'Canada',
+        'info@creed-ai.org', 'active', 'public', 'self_reported')
+ON CONFLICT (slug) DO NOTHING;
+
+ALTER TABLE governance_events ADD COLUMN IF NOT EXISTS tenant_id UUID;
+ALTER TABLE incident_log ADD COLUMN IF NOT EXISTS tenant_id UUID;
+
+UPDATE governance_events SET tenant_id = (SELECT id FROM tenants WHERE slug = 'creed-institute')
+WHERE tenant_id IS NULL;
+UPDATE incident_log SET tenant_id = (SELECT id FROM tenants WHERE slug = 'creed-institute')
+WHERE tenant_id IS NULL;
+
+DO $$
+DECLARE inst UUID;
+BEGIN
+    SELECT id INTO inst FROM tenants WHERE slug = 'creed-institute';
+    EXECUTE format('ALTER TABLE governance_events ALTER COLUMN tenant_id SET DEFAULT %L', inst);
+    EXECUTE format('ALTER TABLE incident_log ALTER COLUMN tenant_id SET DEFAULT %L', inst);
+    ALTER TABLE governance_events ALTER COLUMN tenant_id SET NOT NULL;
+    ALTER TABLE incident_log ALTER COLUMN tenant_id SET NOT NULL;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_events_tenant') THEN
+        ALTER TABLE governance_events
+            ADD CONSTRAINT fk_events_tenant FOREIGN KEY (tenant_id) REFERENCES tenants(id);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_incidents_tenant') THEN
+        ALTER TABLE incident_log
+            ADD CONSTRAINT fk_incidents_tenant FOREIGN KEY (tenant_id) REFERENCES tenants(id);
+    END IF;
+END $$;
+
+CREATE INDEX IF NOT EXISTS idx_events_tenant_created ON governance_events(tenant_id, created_at);
+CREATE INDEX IF NOT EXISTS idx_incident_tenant ON incident_log(tenant_id);
+"""
+
 
 def init_pg():
     global _pg_available
@@ -54,7 +111,9 @@ def init_pg():
         return False
     try:
         conn = _get_pg_conn()
-        conn.cursor().execute(SCHEMA)
+        cur = conn.cursor()
+        cur.execute(SCHEMA)
+        cur.execute(TENANT_MIGRATION)
         conn.commit()
         conn.close()
         _pg_available = True
@@ -94,3 +153,24 @@ def get_pg():
 
 def is_pg_available():
     return _pg_available
+
+
+_institute_tenant_id = None
+
+
+def get_institute_tenant_id():
+    """UUID (str) of the Institute's own tenant row. Cached per worker."""
+    global _institute_tenant_id
+    if _institute_tenant_id:
+        return _institute_tenant_id
+    conn = get_pg()
+    if not conn:
+        return None
+    try:
+        cur = conn.cursor()
+        cur.execute("SELECT id FROM tenants WHERE slug = %s", (INSTITUTE_SLUG,))
+        row = cur.fetchone()
+        _institute_tenant_id = str(row[0]) if row else None
+        return _institute_tenant_id
+    finally:
+        conn.close()
