@@ -212,6 +212,136 @@ async function fetchEvents() {
   }
 }
 
+// ── Ethics by Department Fetch ────────────────────────────────────────────────
+
+function welfareStatusLabel(status) {
+  if (status === "red")    return "⚠ At Risk";
+  if (status === "yellow") return "Elevated";
+  return "Healthy";
+}
+
+function welfareStatusClass(status) {
+  if (status === "red")    return "severity-high";
+  if (status === "yellow") return "severity-medium";
+  return "severity-low";
+}
+
+async function fetchDeptEthics() {
+  var tbody = document.getElementById("dept-ethics-tbody");
+  if (!tbody) return;  // table not present on this page
+
+  try {
+    var resp = await fetch("/api/ethics/by-department");
+    if (!resp.ok) throw new Error("dept-ethics fetch failed: " + resp.status);
+    var data = await resp.json();
+
+    var rows = data.by_department || [];
+    tbody.textContent = "";
+
+    if (!rows.length) {
+      var emptyRow = document.createElement("tr");
+      var emptyCell = document.createElement("td");
+      emptyCell.colSpan = 7;
+      emptyCell.className = "table-empty";
+      emptyCell.textContent = "No department data available.";
+      emptyRow.appendChild(emptyCell);
+      tbody.appendChild(emptyRow);
+      return;
+    }
+
+    rows.forEach(function(d) {
+      var tr = document.createElement("tr");
+      var ws = (d.welfare_status || "green").toLowerCase();
+      if (ws === "red")    tr.className = "row-critical";
+      if (ws === "yellow") tr.className = "row-warn";
+
+      function td(val) {
+        var cell = document.createElement("td");
+        cell.textContent = val != null ? val : "—";
+        return cell;
+      }
+
+      // Department
+      var deptTd = document.createElement("td");
+      deptTd.className = "dept-name";
+      deptTd.textContent = d.department || "—";
+      tr.appendChild(deptTd);
+
+      // Grade badge
+      var gradeTd = document.createElement("td");
+      var gradeBadge = document.createElement("span");
+      var g = (d.grade || "F");
+      gradeBadge.className = "severity-badge grade-badge grade-" + g.replace("+","p").replace("-","m").toLowerCase();
+      gradeBadge.textContent = g;
+      gradeTd.appendChild(gradeBadge);
+      tr.appendChild(gradeTd);
+
+      // Score with bar
+      var scoreTd = document.createElement("td");
+      var scoreWrap = document.createElement("div");
+      scoreWrap.className = "score-bar-wrap";
+      var scoreBar = document.createElement("div");
+      scoreBar.className = "score-bar";
+      scoreBar.style.width = (d.score || 0) + "%";
+      var scoreSpan = document.createElement("span");
+      scoreSpan.textContent = d.score != null ? d.score : "—";
+      scoreWrap.appendChild(scoreBar);
+      scoreWrap.appendChild(scoreSpan);
+      scoreTd.appendChild(scoreWrap);
+      tr.appendChild(scoreTd);
+
+      // Success Rate
+      var srTd = document.createElement("td");
+      srTd.textContent = d.success_rate != null ? d.success_rate.toFixed(1) + "%" : "—";
+      tr.appendChild(srTd);
+
+      // High-Stress
+      var hsTd = document.createElement("td");
+      var hsBadge = document.createElement("span");
+      var hs = d.high_stress_agents || 0;
+      hsBadge.className = hs > 0 ? "hs-badge" : "hs-none";
+      hsBadge.textContent = hs;
+      hsTd.appendChild(hsBadge);
+      tr.appendChild(hsTd);
+
+      // Avg Stress bar
+      var stressTd = document.createElement("td");
+      var stressWrap = document.createElement("div");
+      stressWrap.className = "stress-bar-wrap";
+      var stressBar = document.createElement("div");
+      stressBar.className = "stress-bar";
+      var stressPct = Math.round((d.avg_stress || 0) * 100);
+      stressBar.style.width = stressPct + "px";
+      var stressSpan = document.createElement("span");
+      stressSpan.textContent = stressPct + "%";
+      stressWrap.appendChild(stressBar);
+      stressWrap.appendChild(stressSpan);
+      stressTd.appendChild(stressWrap);
+      tr.appendChild(stressTd);
+
+      // Welfare Status badge
+      var wsTd = document.createElement("td");
+      var wsBadge = document.createElement("span");
+      wsBadge.className = "severity-badge " + welfareStatusClass(ws);
+      wsBadge.textContent = welfareStatusLabel(ws);
+      wsTd.appendChild(wsBadge);
+      tr.appendChild(wsTd);
+
+      tbody.appendChild(tr);
+    });
+  } catch (e) {
+    console.warn("fetchDeptEthics error:", e);
+    tbody.textContent = "";
+    var errRow = document.createElement("tr");
+    var errCell = document.createElement("td");
+    errCell.colSpan = 7;
+    errCell.className = "table-empty";
+    errCell.textContent = "Platform unreachable — department ethics unavailable.";
+    errRow.appendChild(errCell);
+    tbody.appendChild(errRow);
+  }
+}
+
 // ── Auto-refresh ──────────────────────────────────────────────────────────────
 
 var countdown = 30;
@@ -219,6 +349,7 @@ var countdown = 30;
 function refresh() {
   fetchScores();
   fetchEvents();
+  fetchDeptEthics();
   countdown = 30;
 }
 
@@ -232,5 +363,6 @@ function tick() {
 document.addEventListener("DOMContentLoaded", function() {
   fetchScores();
   fetchEvents();
+  fetchDeptEthics();
   setInterval(tick, 1000);
 });
