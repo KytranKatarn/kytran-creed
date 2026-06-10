@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block title %}Impact Assessments — C.R.E.E.D.{% endblock %}
+{% block header_title %}Algorithmic Impact Assessments{% endblock %}
+
+{% block head %}
+<style>
+  .lcars-content { max-width: 980px; margin: 0 auto; }
+  .aia-hero { padding: 28px 4px 8px; }
+  .aia-hero h1 { font-family: 'Orbitron', sans-serif; font-size: 24px; font-weight: 900; color: var(--creed-teal); letter-spacing: 1px; margin: 0 0 8px; }
+  .aia-hero p { font-size: 13px; color: var(--creed-text-dim); line-height: 1.6; }
+  .aia-toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.2rem; }
+  .aia-btn { display: inline-block; padding: 8px 18px; border-radius: 4px; font-size: 13px; font-weight: 600; text-decoration: none; cursor: pointer; border: none; }
+  .aia-btn-primary { background: var(--creed-teal); color: #000; }
+  .aia-btn-primary:hover { opacity: 0.85; }
+  .aia-btn-secondary { background: var(--creed-panel); color: var(--creed-text); border: 1px solid var(--creed-border); }
+  .aia-btn-secondary:hover { border-color: var(--creed-teal); }
+  .aia-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .aia-table th { text-align: left; padding: 8px 12px; border-bottom: 2px solid var(--creed-teal); color: var(--creed-teal); font-size: 11px; letter-spacing: 1px; text-transform: uppercase; }
+  .aia-table td { padding: 10px 12px; border-bottom: 1px solid var(--creed-border); }
+  .aia-table tr:hover td { background: var(--creed-panel); }
+  .aia-table a { color: var(--creed-teal); text-decoration: none; }
+  .aia-table a:hover { text-decoration: underline; }
+  .risk-badge { display: inline-block; padding: 2px 8px; border-radius: 3px; font-size: 11px; font-weight: 600; text-transform: uppercase; }
+  .risk-minimal { background: #1a3a1a; color: #4ade80; }
+  .risk-limited { background: #1a2a3a; color: #60a5fa; }
+  .risk-high { background: #3a1a1a; color: #f87171; }
+  .risk-unacceptable { background: #3a0a0a; color: #ef4444; }
+  .status-badge { display: inline-block; padding: 2px 8px; border-radius: 3px; font-size: 11px; font-weight: 600; text-transform: uppercase; background: var(--creed-panel); color: var(--creed-text-dim); border: 1px solid var(--creed-border); }
+  .status-published { background: #1a2e1a; color: #4ade80; border-color: #4ade80; }
+  .alert { padding: 10px 14px; border-radius: 4px; margin-bottom: 1rem; font-size: 13px; }
+  .alert-error { background: #3a1a1a; color: #f87171; border: 1px solid #f87171; }
+  .alert-success { background: #1a2e1a; color: #4ade80; border: 1px solid #4ade80; }
+  .aia-empty { padding: 40px; text-align: center; color: var(--creed-text-dim); font-size: 14px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="lcars-content">
+  <div class="aia-hero">
+    <h1>Algorithmic Impact Assessments</h1>
+    <p>ISO 42001 Annex A.5 — Document and publish impact assessments for each AI system.</p>
+  </div>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for cat, msg in messages %}
+      <div class="alert alert-{{ cat }}">{{ msg }}</div>
+    {% endfor %}
+  {% endwith %}
+
+  <div class="aia-toolbar">
+    <span style="color: var(--creed-text-dim); font-size: 13px;">{{ assessments | length }} assessment{{ 's' if assessments | length != 1 else '' }}</span>
+    <a href="{{ url_for('aia.new_aia') }}" class="aia-btn aia-btn-primary">+ New AIA</a>
+  </div>
+
+  {% if assessments %}
+  <table class="aia-table">
+    <thead>
+      <tr>
+        <th>System Name</th>
+        <th>Risk Tier</th>
+        <th>Decision Type</th>
+        <th>Status</th>
+        <th>Created</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for a in assessments %}
+      <tr>
+        <td><a href="{{ url_for('aia.view_aia', aia_id=a.id) }}">{{ a.name }}</a></td>
+        <td><span class="risk-badge risk-{{ a.risk_tier }}">{{ a.risk_tier }}</span></td>
+        <td>{{ a.decision_type }}</td>
+        <td><span class="status-badge {% if a.status == 'published' %}status-published{% endif %}">{{ a.status }}</span></td>
+        <td>{{ (a.created_at | string)[:10] }}</td>
+        <td><a href="{{ url_for('aia.edit_aia', aia_id=a.id) }}" style="font-size:12px;">Edit</a></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="aia-empty">
+    <p>No assessments yet.</p>
+    <a href="{{ url_for('aia.new_aia') }}" class="aia-btn aia-btn-primary" style="margin-top:12px;">Create the first AIA</a>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
