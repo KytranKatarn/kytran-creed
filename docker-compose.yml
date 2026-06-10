@@ -57,6 +57,13 @@ services:
       - ./data:/data
     secrets:
       - db_password
+    networks:
+      - default
+      - archie_network
+
+networks:
+  archie_network:
+    external: true
 
 secrets:
   db_password:
