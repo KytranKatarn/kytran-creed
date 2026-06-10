@@ -99,6 +99,43 @@ def test_onboarding_apply_requires_pg(client):
     assert r.status_code == 503
 
 
+def test_org_profile_template_renders(app):
+    """org_profile.html must render against the real base.html context.
+    Regression: passing the tenant as `t=` shadowed the i18n t() helper from
+    base.html ('dict' object is not callable → 500 on every /org/<slug>)."""
+    from flask import render_template
+
+    tenant = {
+        "slug": "test-org",
+        "name": "Test Org",
+        "website": "https://example.com",
+        "country": "Canada",
+        "member_since": "2026-06-09T00:00:00",
+    }
+    with app.test_request_context("/org/test-org"):
+        html = render_template(
+            "org_profile.html",
+            org=tenant,
+            scores={"overall": 95.0, "grade": "A", "event_count": 120, "by_category": {}},
+            pillars=[("Safety", {"score": 95.0, "grade": "A", "color": "#10b981"})],
+            freshness={
+                "provisional": False,
+                "events_30d": 120,
+                "total_events": 120,
+                "categories_active": 3,
+                "span_days": 15.0,
+                "last_event_at": "2026-06-09T00:00:00",
+            },
+            gate={"events": 100, "categories": 3, "days": 14},
+            color="#10b981",
+            tier_label="SELF-REPORTED",
+            last_reported="just now",
+            incidents_disclosed=0,
+        )
+    assert "Test Org" in html
+    assert "/org/test-org" in html
+
+
 def test_post_event_keyless_still_works(client):
     """The institute's legacy keyless feed must keep working (P2 retires it)."""
     r = client.post(

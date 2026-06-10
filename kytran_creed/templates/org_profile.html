@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}{{ t.name }} — C.R.E.E.D. Transparency Profile{% endblock %}
+{% block title %}{{ org.name }} — C.R.E.E.D. Transparency Profile{% endblock %}
 {% block header_title %}Transparency Profile{% endblock %}
 
 {% block head %}
@@ -69,13 +69,13 @@
 
 {% block content %}
 <div class="op-hero">
-  <h1>{{ t.name }}</h1>
+  <h1>{{ org.name }}</h1>
   <span class="op-tier">{{ tier_label }}</span>
   <div class="op-sub">
-    /org/{{ t.slug }}
-    {% if t.website %} &middot; <a href="{{ t.website }}" target="_blank" rel="noopener">{{ t.website }}</a>{% endif %}
-    {% if t.country %} &middot; {{ t.country }}{% endif %}
-    {% if t.member_since %} &middot; listed since {{ t.member_since[:10] }}{% endif %}
+    /org/{{ org.slug }}
+    {% if org.website %} &middot; <a href="{{ org.website }}" target="_blank" rel="noopener">{{ org.website }}</a>{% endif %}
+    {% if org.country %} &middot; {{ org.country }}{% endif %}
+    {% if org.member_since %} &middot; listed since {{ org.member_since[:10] }}{% endif %}
   </div>
 </div>
 
@@ -124,14 +124,14 @@
   <div class="op-panel">
     <h2>Embed This Badge</h2>
     <div class="op-embed">
-      <img src="/api/v1/badge/{{ t.slug }}/overall" alt="C.R.E.E.D. badge for {{ t.name }}" height="20">
-      <code>&lt;img src="{{ request.host_url }}api/v1/badge/{{ t.slug }}/overall" alt="C.R.E.E.D. transparency badge"&gt;</code>
+      <img src="/api/v1/badge/{{ org.slug }}/overall" alt="C.R.E.E.D. badge for {{ org.name }}" height="20">
+      <code>&lt;img src="{{ request.host_url }}api/v1/badge/{{ org.slug }}/overall" alt="C.R.E.E.D. transparency badge"&gt;</code>
     </div>
   </div>
 </div>
 
 <div class="op-footer">
-  Machine-readable: <a href="/api/v1/orgs/{{ t.slug }}/scores">/api/v1/orgs/{{ t.slug }}/scores</a>
+  Machine-readable: <a href="/api/v1/orgs/{{ org.slug }}/scores">/api/v1/orgs/{{ org.slug }}/scores</a>
   &mdash; <a href="/directory">Back to directory</a>
   &mdash; Methodology: <a href="https://creed-ai.org/research.html" target="_blank" rel="noopener">creed-ai.org working papers</a>
 </div>
