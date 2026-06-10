@@ -103,7 +103,7 @@
     <div class="op-bar-row">
       <div class="op-bar-label">{{ cat }}</div>
       <div class="op-bar-track"><div class="op-bar-fill" style="width: {{ c.score }}%; background: {{ c.color }};"></div></div>
-      <div class="op-bar-val">{{ c.score }} &middot; {{ c.grade }}</div>
+      <div class="op-bar-val">{% if c.provisional %}<span title="Excluded from the overall score until minimum event volume is reached">provisional &middot; {{ c.events }} ev</span>{% else %}{{ c.score }} &middot; {{ c.grade }}{% endif %}</div>
     </div>
     {% endfor %}
   </div>
