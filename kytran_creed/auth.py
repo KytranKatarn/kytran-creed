@@ -52,6 +52,32 @@ def admin_required(f):
     return decorated
 
 
+def internal_or_admin(f):
+    """Allow either a logged-in admin session OR a server-to-server caller
+    presenting a valid X-Internal-Key (the hub's C.R.E.E.D. Command module).
+
+    Lets the platform's E.T.H.O.S. workspace drive tenant ops over the
+    hub-local network without a browser session, while keeping the same
+    endpoints usable from the standalone admin UI.
+    """
+    import hmac
+
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        key = os.environ.get("CREED_INTERNAL_KEY", "")
+        provided = request.headers.get("X-Internal-Key", "")
+        if key and provided and hmac.compare_digest(provided, key):
+            return f(*args, **kwargs)
+        # fall back to admin-session auth
+        from flask_login import current_user
+
+        if getattr(current_user, "is_authenticated", False) and getattr(current_user, "is_admin", False):
+            return f(*args, **kwargs)
+        return {"error": "admin or internal key required"}, 403
+
+    return decorated
+
+
 def setup_required():
     db = get_db()
     try:

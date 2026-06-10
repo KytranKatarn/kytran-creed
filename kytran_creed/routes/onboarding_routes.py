@@ -23,7 +23,7 @@ from email.message import EmailMessage
 
 from flask import Blueprint, jsonify, render_template, request
 
-from kytran_creed.auth import admin_required
+from kytran_creed.auth import admin_required, internal_or_admin
 from kytran_creed.pg import get_pg
 from kytran_creed.tenant_auth import generate_api_key
 
@@ -277,7 +277,7 @@ def regen_verify_link(slug):
 
 
 @onboarding_bp.route("/api/v1/orgs/<slug>/approve", methods=["POST"])
-@admin_required
+@internal_or_admin
 def approve_org(slug):
     """Activate a pending org + mint its first ingest key (returned ONCE)."""
     pg = get_pg()
@@ -325,7 +325,7 @@ def approve_org(slug):
 
 
 @onboarding_bp.route("/api/v1/orgs/<slug>/reject", methods=["POST"])
-@admin_required
+@internal_or_admin
 def reject_org(slug):
     pg = get_pg()
     if not pg:

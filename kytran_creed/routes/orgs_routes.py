@@ -19,7 +19,7 @@ import re
 
 from flask import Blueprint, jsonify, render_template, request
 
-from kytran_creed.auth import admin_required
+from kytran_creed.auth import admin_required, internal_or_admin
 from kytran_creed.pg import get_pg
 from kytran_creed.routes.api_routes import _get_recent_events
 from kytran_creed.services.scoring_engine import calculate_scores
@@ -216,7 +216,7 @@ def create_org():
 
 
 @orgs_bp.route("/orgs/<slug>/keys", methods=["POST"])
-@admin_required
+@internal_or_admin
 def mint_org_key(slug):
     """Mint an ingest API key for a tenant. Plaintext is returned ONCE."""
     pg = get_pg()
@@ -259,7 +259,7 @@ def mint_org_key(slug):
 
 
 @orgs_bp.route("/orgs/<slug>/keys", methods=["GET"])
-@admin_required
+@internal_or_admin
 def list_org_keys(slug):
     """Key metadata for a tenant — never the plaintext or hash."""
     pg = get_pg()
