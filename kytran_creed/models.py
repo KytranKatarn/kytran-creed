@@ -5,6 +5,72 @@ VALID_CATEGORIES = {"transparency", "fairness", "safety", "privacy", "accountabi
 VALID_SEVERITIES = {"info", "warning", "violation", "critical"}
 REQUIRED_EVENT_FIELDS = {"event_type", "source_platform", "agent_id", "category", "severity", "description"}
 
+# C.R.E.E.D. Event Schema version — bump on any breaking change to the event
+# object. Ingest tolerates (and ignores) an optional `schema_version` field so
+# emitters can pin the version they target.
+SCHEMA_VERSION = "1"
+
+METADATA_MAX_BYTES = 4096
+
+
+def event_json_schema(base_url: str = "https://api.creed-ai.org") -> dict:
+    """JSON Schema (draft 2020-12) for the v1 governance event — generated
+    from the same constants `GovernanceEvent.validate()` enforces, so the
+    published standard can never drift from what the API actually accepts."""
+    return {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "$id": f"{base_url}/api/v1/schema",
+        "title": "C.R.E.E.D. Governance Event",
+        "description": (
+            "A single governance event emitted by an AI system operator. "
+            "Events describe systems, never people — submissions containing "
+            "personal data (emails, phone numbers) are rejected at the door."
+        ),
+        "type": "object",
+        "required": sorted(REQUIRED_EVENT_FIELDS),
+        "properties": {
+            "event_type": {
+                "type": "string",
+                "description": "Operator-defined event name, e.g. 'welfare_rest', 'bias_sample', 'access_review'",
+            },
+            "source_platform": {
+                "type": "string",
+                "description": "The emitting system/orchestrator identifier",
+            },
+            "agent_id": {
+                "type": "string",
+                "description": "Stable identifier of the AI agent/model/component the event concerns",
+            },
+            "agent_name": {
+                "type": "string",
+                "description": "Optional human-readable agent name",
+            },
+            "category": {
+                "type": "string",
+                "enum": sorted(VALID_CATEGORIES),
+                "description": "Scoring pillar the event belongs to",
+            },
+            "severity": {
+                "type": "string",
+                "enum": sorted(VALID_SEVERITIES),
+                "description": "Governance weight: info=0, warning=1, violation=3, critical=5",
+            },
+            "description": {
+                "type": "string",
+                "description": "What happened, in systems language. No personal data.",
+            },
+            "metadata": {
+                "type": "object",
+                "description": f"Optional structured context, max {METADATA_MAX_BYTES} bytes serialized",
+            },
+            "schema_version": {
+                "type": "string",
+                "description": f"Optional schema version the emitter targets (current: '{SCHEMA_VERSION}')",
+            },
+        },
+        "additionalProperties": True,
+    }
+
 
 @dataclass
 class GovernanceEvent:

@@ -48,6 +48,9 @@
         <a href="/directory" class="lcars-nav-item {% if request.path == '/directory' or request.path.startswith('/org/') %}active{% endif %}">
           <span class="nav-icon">&#9733;</span> Org Directory
         </a>
+        <a href="/standard" class="lcars-nav-item {% if request.path == '/standard' %}active{% endif %}">
+          <span class="nav-icon">&#9881;</span> Event Standard
+        </a>
         <a href="/remediation" class="lcars-nav-item {% if request.path == '/remediation' %}active{% endif %}">
           <span class="nav-icon">&#9874;</span> Remediation Registry
         </a>

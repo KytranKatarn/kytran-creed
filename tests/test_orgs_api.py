@@ -136,6 +136,51 @@ def test_org_profile_template_renders(app):
     assert "/org/test-org" in html
 
 
+def test_event_json_schema_matches_validator(client):
+    """/api/v1/schema enums must equal the constants validate() enforces —
+    the published standard can never drift from the actual validator."""
+    from kytran_creed.models import REQUIRED_EVENT_FIELDS, VALID_CATEGORIES, VALID_SEVERITIES
+
+    r = client.get("/api/v1/schema")
+    assert r.status_code == 200
+    schema = r.get_json()
+    assert schema["$schema"] == "https://json-schema.org/draft/2020-12/schema"
+    assert set(schema["required"]) == REQUIRED_EVENT_FIELDS
+    assert set(schema["properties"]["category"]["enum"]) == VALID_CATEGORIES
+    assert set(schema["properties"]["severity"]["enum"]) == VALID_SEVERITIES
+    assert "schema_version" in schema["properties"]
+    assert r.headers["Access-Control-Allow-Origin"] == "*"
+
+
+def test_standard_page_renders(client):
+    r = client.get("/standard")
+    assert r.status_code == 200
+    assert b"Event Schema" in r.data
+    assert b"/api/v1/schema" in r.data
+    # every pillar + severity from the validator must appear on the page
+    from kytran_creed.models import VALID_CATEGORIES, VALID_SEVERITIES
+
+    for name in VALID_CATEGORIES | VALID_SEVERITIES:
+        assert name.encode() in r.data
+
+
+def test_post_event_with_schema_version_tolerated(client):
+    """Emitters may pin schema_version — ingest must accept and ignore it."""
+    r = client.post(
+        "/api/v1/events",
+        json={
+            "event_type": "test",
+            "source_platform": "pytest",
+            "agent_id": "t1",
+            "category": "safety",
+            "severity": "info",
+            "description": "event pinned to schema v1",
+            "schema_version": "1",
+        },
+    )
+    assert r.status_code == 201
+
+
 def test_post_event_keyless_still_works(client):
     """The institute's legacy keyless feed must keep working (P2 retires it)."""
     r = client.post(

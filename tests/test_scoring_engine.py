@@ -19,7 +19,9 @@ def test_violations_reduce_score():
         {"category": "safety", "severity": "critical"},
     ]
     scores = calculate_scores(events)
-    assert scores["by_category"]["safety"] < 80.0
+    # by_category values are dicts ({score, grade, events}) since the public
+    # scores API expansion — this test predated that shape change
+    assert scores["by_category"]["safety"]["score"] < 80.0
 
 
 def test_empty_events_returns_baseline():
