@@ -9,6 +9,19 @@
   <link href="https://fonts.googleapis.com/css2?family=Antonio:wght@400;600;700&family=Orbitron:wght@400;600;700;900&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/creed.css') }}">
   {% block head %}{% endblock %}
+  <style>
+.creed-btn-lang {
+  background: transparent;
+  border: 1px solid var(--accent, #00d4aa);
+  color: var(--accent, #00d4aa);
+  padding: 0.2rem 0.6rem;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+.creed-btn-lang:hover { background: var(--accent, #00d4aa); color: #000; }
+  </style>
 </head>
 <body>
   <div class="lcars-layout">
@@ -66,6 +79,13 @@
           {% block header_title %}C.R.E.E.D. Governance Dashboard{% endblock %}
         </div>
         <div class="lcars-header-actions">
+          <form method="POST" action="/set-language" style="display:inline-flex; align-items:center; margin-left:1rem;">
+            <input type="hidden" name="lang" value="{{ 'fr' if current_lang == 'en' else 'en' }}">
+            <input type="hidden" name="next" value="{{ request.path }}">
+            <button type="submit" class="creed-btn-lang" title="{{ t('lang.switch_to') }}">
+              {{ t('lang.switch') }}
+            </button>
+          </form>
           {% if current_user is defined and current_user.is_authenticated %}
             <span class="header-user">{{ current_user.display_name }}</span>
             <a href="/logout" class="btn-lcars btn-lcars-sm btn-lcars-danger">Logout</a>

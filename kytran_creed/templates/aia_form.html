@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}{% if edit %}Edit{% else %}New{% endif %} AIA — C.R.E.E.D.{% endblock %}
+{% block header_title %}{% if edit %}Edit{% else %}New{% endif %} Algorithmic Impact Assessment{% endblock %}
+
+{% block head %}
+<style>
+  .lcars-content { max-width: 760px; margin: 0 auto; }
+  .aia-form-hero { padding: 20px 4px 4px; }
+  .aia-form-hero h1 { font-family: 'Orbitron', sans-serif; font-size: 20px; font-weight: 900; color: var(--creed-teal); margin: 0 0 6px; }
+  .aia-form-hero p { font-size: 12px; color: var(--creed-text-dim); margin: 0 0 20px; }
+  .form-group { margin-bottom: 1.2rem; }
+  .form-group label { display: block; font-weight: 600; font-size: 13px; margin-bottom: 4px; color: var(--creed-text); }
+  .form-group label .req { color: #ef4444; margin-left: 2px; }
+  .form-group small { display: block; font-size: 11px; color: var(--creed-text-dim); margin-bottom: 6px; }
+  .form-control { width: 100%; padding: 8px 10px; background: var(--creed-panel); color: var(--creed-text); border: 1px solid var(--creed-border); border-radius: 4px; font-size: 13px; box-sizing: border-box; }
+  .form-control:focus { outline: none; border-color: var(--creed-teal); }
+  textarea.form-control { resize: vertical; min-height: 80px; }
+  .aia-btn { display: inline-block; padding: 9px 20px; border-radius: 4px; font-size: 13px; font-weight: 600; text-decoration: none; cursor: pointer; border: none; }
+  .aia-btn-primary { background: var(--creed-teal); color: #000; }
+  .aia-btn-primary:hover { opacity: 0.85; }
+  .aia-btn-secondary { background: var(--creed-panel); color: var(--creed-text); border: 1px solid var(--creed-border); }
+  .aia-btn-secondary:hover { border-color: var(--creed-teal); }
+  .form-actions { display: flex; gap: 12px; margin-top: 1.8rem; }
+  .alert { padding: 10px 14px; border-radius: 4px; margin-bottom: 1rem; font-size: 13px; }
+  .alert-error { background: #3a1a1a; color: #f87171; border: 1px solid #f87171; }
+  .alert-success { background: #1a2e1a; color: #4ade80; border: 1px solid #4ade80; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="lcars-content">
+  <div class="aia-form-hero">
+    <h1>{% if edit %}Edit{% else %}New{% endif %} Algorithmic Impact Assessment</h1>
+    <p>ISO 42001 Annex A.5 — complete all required fields marked with <span style="color:#ef4444;">*</span></p>
+  </div>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for cat, msg in messages %}
+      <div class="alert alert-{{ cat }}">{{ msg }}</div>
+    {% endfor %}
+  {% endwith %}
+
+  <form method="POST">
+    {% for q in questions %}
+    <div class="form-group">
+      <label for="{{ q.id }}">{{ q.label }}{% if q.required %}<span class="req">*</span>{% endif %}</label>
+      <small>{{ q.help }}</small>
+      {% if q.type == 'textarea' %}
+        <textarea id="{{ q.id }}" name="{{ q.id }}" class="form-control" rows="3" {% if q.required %}required{% endif %}>{{ data.get(q.id, '') }}</textarea>
+      {% elif q.type == 'select' %}
+        <select id="{{ q.id }}" name="{{ q.id }}" class="form-control" {% if q.required %}required{% endif %}>
+          {% for val, label in q.options %}
+            <option value="{{ val }}" {% if data.get(q.id, '') == val %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      {% else %}
+        <input type="text" id="{{ q.id }}" name="{{ q.id }}" class="form-control" value="{{ data.get(q.id, '') }}" {% if q.required %}required{% endif %}>
+      {% endif %}
+    </div>
+    {% endfor %}
+
+    {% if edit %}
+    <div class="form-group">
+      <label for="status">Status</label>
+      <small>Change from draft to published when the assessment is finalised.</small>
+      <select id="status" name="status" class="form-control">
+        <option value="draft" {% if data.get('status', 'draft') == 'draft' %}selected{% endif %}>Draft</option>
+        <option value="published" {% if data.get('status') == 'published' %}selected{% endif %}>Published</option>
+      </select>
+    </div>
+    {% endif %}
+
+    <div class="form-actions">
+      <button type="submit" class="aia-btn aia-btn-primary">{% if edit %}Save Changes{% else %}Create Assessment{% endif %}</button>
+      <a href="{{ url_for('aia.list_aias') }}" class="aia-btn aia-btn-secondary">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

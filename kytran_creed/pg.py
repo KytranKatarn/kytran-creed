@@ -44,6 +44,28 @@ CREATE TABLE IF NOT EXISTS incident_log (
 );
 CREATE INDEX IF NOT EXISTS idx_incident_disclosed ON incident_log(disclosed, disclosed_at);
 CREATE INDEX IF NOT EXISTS idx_incident_severity ON incident_log(severity);
+
+CREATE TABLE IF NOT EXISTS aia_assessments (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(300) NOT NULL,
+    purpose TEXT NOT NULL,
+    affected_parties TEXT NOT NULL,
+    decision_type VARCHAR(50) NOT NULL DEFAULT 'advisory',
+    human_oversight TEXT NOT NULL,
+    risk_tier VARCHAR(20) NOT NULL DEFAULT 'limited',
+    data_sources TEXT,
+    known_limitations TEXT,
+    mitigation_measures TEXT,
+    review_cadence VARCHAR(100),
+    answers_json JSONB DEFAULT '{}',
+    status VARCHAR(20) NOT NULL DEFAULT 'draft',
+    created_by VARCHAR(100),
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    tenant_id UUID REFERENCES tenants(id)
+);
+CREATE INDEX IF NOT EXISTS idx_aia_tenant ON aia_assessments(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_aia_status ON aia_assessments(status);
 """
 
 INSTITUTE_SLUG = "creed-institute"

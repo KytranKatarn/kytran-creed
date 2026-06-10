@@ -1,5 +1,5 @@
 SEVERITY_WEIGHTS = {"info": 0, "warning": 1, "violation": 3, "critical": 5}
-CATEGORIES = ["transparency", "fairness", "safety", "privacy", "accountability"]
+CATEGORIES = ["transparency", "fairness", "safety", "privacy", "accountability", "environmental"]
 GRADE_THRESHOLDS = [(95, "A+"), (90, "A"), (85, "B+"), (80, "B"), (70, "C"), (60, "D")]
 
 

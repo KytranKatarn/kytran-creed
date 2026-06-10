@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 from typing import Optional
 
-VALID_CATEGORIES = {"transparency", "fairness", "safety", "privacy", "accountability"}
+VALID_CATEGORIES = {"transparency", "fairness", "safety", "privacy", "accountability", "environmental"}
 VALID_SEVERITIES = {"info", "warning", "violation", "critical"}
 REQUIRED_EVENT_FIELDS = {"event_type", "source_platform", "agent_id", "category", "severity", "description"}
 

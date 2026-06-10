@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block title %}{{ assessment.name }} — AIA Report — C.R.E.E.D.{% endblock %}
+{% block header_title %}AIA Report{% endblock %}
+
+{% block head %}
+<style>
+  .lcars-content { max-width: 860px; margin: 0 auto; }
+  .aia-report-hero { padding: 20px 4px 16px; border-bottom: 1px solid var(--creed-border); margin-bottom: 24px; }
+  .aia-report-hero h1 { font-family: 'Orbitron', sans-serif; font-size: 22px; font-weight: 900; color: var(--creed-teal); margin: 0 0 10px; }
+  .aia-meta { display: flex; gap: 20px; flex-wrap: wrap; font-size: 12px; color: var(--creed-text-dim); }
+  .aia-meta strong { color: var(--creed-text); }
+  .risk-badge { display: inline-block; padding: 2px 8px; border-radius: 3px; font-size: 11px; font-weight: 600; text-transform: uppercase; }
+  .risk-minimal { background: #1a3a1a; color: #4ade80; }
+  .risk-limited { background: #1a2a3a; color: #60a5fa; }
+  .risk-high { background: #3a1a1a; color: #f87171; }
+  .risk-unacceptable { background: #3a0a0a; color: #ef4444; }
+  .status-badge { display: inline-block; padding: 2px 8px; border-radius: 3px; font-size: 11px; font-weight: 600; text-transform: uppercase; background: var(--creed-panel); color: var(--creed-text-dim); border: 1px solid var(--creed-border); }
+  .status-published { background: #1a2e1a; color: #4ade80; border-color: #4ade80; }
+  .aia-field { margin-bottom: 1.4rem; }
+  .aia-field-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--creed-teal); margin-bottom: 6px; }
+  .aia-field-value { font-size: 14px; line-height: 1.6; color: var(--creed-text); white-space: pre-wrap; }
+  .aia-divider { border: none; border-top: 1px solid var(--creed-border); margin: 1.5rem 0; }
+  .aia-actions { display: flex; gap: 12px; margin-top: 2rem; flex-wrap: wrap; }
+  .aia-btn { display: inline-block; padding: 9px 20px; border-radius: 4px; font-size: 13px; font-weight: 600; text-decoration: none; cursor: pointer; border: none; }
+  .aia-btn-primary { background: var(--creed-teal); color: #000; }
+  .aia-btn-primary:hover { opacity: 0.85; }
+  .aia-btn-secondary { background: var(--creed-panel); color: var(--creed-text); border: 1px solid var(--creed-border); }
+  .aia-btn-secondary:hover { border-color: var(--creed-teal); }
+  .alert { padding: 10px 14px; border-radius: 4px; margin-bottom: 1rem; font-size: 13px; }
+  .alert-error { background: #3a1a1a; color: #f87171; border: 1px solid #f87171; }
+  .alert-success { background: #1a2e1a; color: #4ade80; border: 1px solid #4ade80; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="lcars-content">
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for cat, msg in messages %}
+      <div class="alert alert-{{ cat }}">{{ msg }}</div>
+    {% endfor %}
+  {% endwith %}
+
+  <div class="aia-report-hero">
+    <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:10px;">
+      <h1>{{ assessment.name }}</h1>
+      <span class="status-badge {% if assessment.status == 'published' %}status-published{% endif %}">{{ (assessment.status or 'draft') | upper }}</span>
+    </div>
+    <div class="aia-meta">
+      <span>Risk: <strong><span class="risk-badge risk-{{ assessment.risk_tier }}">{{ assessment.risk_tier }}</span></strong></span>
+      <span>Decision type: <strong>{{ assessment.decision_type }}</strong></span>
+      {% if assessment.created_by %}<span>Author: <strong>{{ assessment.created_by }}</strong></span>{% endif %}
+      <span>Created: <strong>{{ (assessment.created_at | string)[:10] }}</strong></span>
+      {% if assessment.updated_at and (assessment.updated_at | string)[:10] != (assessment.created_at | string)[:10] %}
+      <span>Updated: <strong>{{ (assessment.updated_at | string)[:10] }}</strong></span>
+      {% endif %}
+    </div>
+  </div>
+
+  {% set fields = [
+    ('purpose', 'Purpose and Use Case'),
+    ('affected_parties', 'Affected Parties'),
+    ('human_oversight', 'Human Oversight Mechanism'),
+    ('data_sources', 'Data Sources'),
+    ('known_limitations', 'Known Limitations and Failure Modes'),
+    ('mitigation_measures', 'Mitigation Measures'),
+    ('review_cadence', 'Review Cadence'),
+  ] %}
+
+  {% for key, label in fields %}
+    {% if assessment.get(key) %}
+    <div class="aia-field">
+      <div class="aia-field-label">{{ label }}</div>
+      <div class="aia-field-value">{{ assessment[key] }}</div>
+    </div>
+    <hr class="aia-divider">
+    {% endif %}
+  {% endfor %}
+
+  <div class="aia-actions">
+    <a href="{{ url_for('aia.edit_aia', aia_id=assessment.id) }}" class="aia-btn aia-btn-secondary">Edit</a>
+    {% if assessment.status == 'draft' %}
+    <button onclick="publishAIA({{ assessment.id }})" class="aia-btn aia-btn-primary">Publish</button>
+    {% endif %}
+    <a href="{{ url_for('aia.list_aias') }}" class="aia-btn aia-btn-secondary">← All Assessments</a>
+  </div>
+</div>
+
+<script>
+function publishAIA(id) {
+  if (!confirm('Publish this assessment? It will be marked as finalised.')) return;
+  fetch('/aia/' + id + '/publish', {method: 'POST', headers: {'Content-Type': 'application/json'}})
+    .then(r => r.json())
+    .then(d => { if (d.success) location.reload(); else alert('Publish failed.'); })
+    .catch(() => alert('Request failed.'));
+}
+</script>
+{% endblock %}

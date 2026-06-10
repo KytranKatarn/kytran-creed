@@ -87,6 +87,25 @@ def init_db(path):
         INSERT OR IGNORE INTO tenants (id, slug, name, website, country, contact_email, status, listing)
         VALUES ('00000000-0000-0000-0000-000000000001', 'creed-institute', 'C.R.E.E.D. Institute',
                 'https://creed-ai.org', 'Canada', 'info@creed-ai.org', 'active', 'public');
+        CREATE TABLE IF NOT EXISTS aia_assessments (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            purpose TEXT NOT NULL,
+            affected_parties TEXT NOT NULL,
+            decision_type TEXT NOT NULL DEFAULT 'advisory',
+            human_oversight TEXT NOT NULL,
+            risk_tier TEXT NOT NULL DEFAULT 'limited',
+            data_sources TEXT,
+            known_limitations TEXT,
+            mitigation_measures TEXT,
+            review_cadence TEXT,
+            answers_json TEXT DEFAULT '{}',
+            status TEXT NOT NULL DEFAULT 'draft',
+            created_by TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            tenant_id TEXT
+        );
     """)
     # Multi-tenant columns (task #3269 P1.1). SQLite is the single-tenant /
     # self-host fallback, so tenant_id stays NULLABLE here (NULL = institute);
