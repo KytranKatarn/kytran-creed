@@ -417,7 +417,8 @@ def org_profile_page(slug):
             )
         return render_template(
             "org_profile.html",
-            t=_tenant_row_to_dict(row),
+            # named `org` (not `t`) — `t` would shadow base.html's i18n t() helper
+            org=_tenant_row_to_dict(row),
             scores=scores,
             pillars=pillars,
             freshness=stats,
