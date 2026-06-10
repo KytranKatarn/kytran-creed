@@ -3,6 +3,7 @@ import logging
 from flask import Flask, jsonify
 from kytran_creed.config import Config
 from kytran_creed.db import init_db
+from kytran_creed.i18n import t as i18n_t, SUPPORTED_LANGS
 
 __version__ = "0.1.0"
 
@@ -40,6 +41,11 @@ def create_app(config=None):
         create_admin(admin_user, admin_pass)
 
     @app.before_request
+    def _set_locale():
+        from flask import g, session
+        g.lang = session.get("lang", "en")
+
+    @app.before_request
     def check_setup():
         from flask import request, redirect
         # Skip auth/setup/API/badge/health endpoints
@@ -56,6 +62,25 @@ def create_app(config=None):
             return
         if setup_required():
             return redirect("/setup")
+
+    @app.context_processor
+    def _inject_i18n():
+        from flask import g
+        lang = getattr(g, "lang", "en")
+        return {
+            "t": lambda key: i18n_t(key, lang),
+            "current_lang": lang,
+        }
+
+    @app.route("/set-language", methods=["POST"])
+    def set_language():
+        from flask import session, redirect, request, flash
+        lang = request.form.get("lang", "en")
+        if lang not in SUPPORTED_LANGS:
+            lang = "en"
+        session["lang"] = lang
+        next_url = request.form.get("next") or request.referrer or "/"
+        return redirect(next_url)
 
     @app.after_request
     def add_cors_pna_headers(resp):
