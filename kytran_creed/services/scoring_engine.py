@@ -1,6 +1,21 @@
+import os
+
 SEVERITY_WEIGHTS = {"info": 0, "warning": 1, "violation": 3, "critical": 5}
 CATEGORIES = ["transparency", "fairness", "safety", "privacy", "accountability", "environmental"]
 GRADE_THRESHOLDS = [(95, "A+"), (90, "A"), (85, "B+"), (80, "B"), (70, "C"), (60, "D")]
+
+# Pillar-level minimum-volume gate (#3942): a pillar needs at least this many
+# events before its score is statistically meaningful enough to count toward
+# the overall. Below the threshold the pillar is reported as provisional and
+# excluded — same philosophy as the tenant provisional gate (>=100 events).
+PILLAR_MIN_EVENTS = int(os.getenv("CREED_PILLAR_MIN_EVENTS", "100"))
+
+
+def _grade(score: float) -> str:
+    for threshold, g in GRADE_THRESHOLDS:
+        if score >= threshold:
+            return g
+    return "F"
 
 
 def calculate_scores(events: list[dict]) -> dict:
@@ -9,13 +24,32 @@ def calculate_scores(events: list[dict]) -> dict:
     Score = 100 * (1 - weighted_violation_rate). A category with all info
     events scores 100. A category where 50% of events are critical scores
     ~50. This scales properly regardless of event volume.
+
+    Volume gate: pillars with fewer than PILLAR_MIN_EVENTS events are marked
+    ``provisional`` and excluded from the overall when at least one pillar
+    qualifies. If NO pillar qualifies (low-volume tenant), the overall falls
+    back to all active pillars and is itself flagged ``overall_provisional``
+    — a 2-event pillar must neither tank nor inflate a 300k-event overall,
+    and a 50-event tenant must not display a confident grade.
     """
     if not events:
         return {
             "overall": 100.0,
             "grade": "A+",
-            "by_category": {c: 100.0 for c in CATEGORIES},
+            "by_category": {
+                c: {
+                    "score": 100.0,
+                    "events": 0,
+                    "grade": "A+",
+                    "provisional": True,
+                    "note": "no events recorded",
+                }
+                for c in CATEGORIES
+            },
             "event_count": 0,
+            "overall_provisional": True,
+            "pillar_min_events": PILLAR_MIN_EVENTS,
+            "overall_categories": [],
         }
 
     category_weighted_sum = {c: 0.0 for c in CATEGORIES}
@@ -41,33 +75,52 @@ def calculate_scores(events: list[dict]) -> dict:
             score = 100.0
         cat_scores[cat] = score
 
-    active_categories = [s for c, s in cat_scores.items() if category_counts.get(c, 0) > 0]
-    overall = round(sum(active_categories) / len(active_categories), 1) if active_categories else 100.0
+    qualified = [c for c in CATEGORIES if category_counts[c] >= PILLAR_MIN_EVENTS]
+    active = [c for c in CATEGORIES if category_counts[c] > 0]
 
-    overall_grade = "F"
-    for threshold, g in GRADE_THRESHOLDS:
-        if overall >= threshold:
-            overall_grade = g
-            break
+    if qualified:
+        overall_categories = qualified
+        overall_provisional = False
+    else:
+        # Degenerate case: nothing meets the bar — legacy behavior, flagged.
+        overall_categories = active
+        overall_provisional = True
 
-    def _grade(score):
-        for threshold, g in GRADE_THRESHOLDS:
-            if score >= threshold:
-                return g
-        return "F"
+    if overall_categories:
+        overall = round(sum(cat_scores[c] for c in overall_categories) / len(overall_categories), 1)
+    else:
+        overall = 100.0
 
-    by_category = {
-        cat: {
+    by_category = {}
+    for cat in CATEGORIES:
+        entry = {
             "score": cat_scores[cat],
             "events": category_counts[cat],
             "grade": _grade(cat_scores[cat]),
         }
-        for cat in CATEGORIES
-    }
+        if cat not in overall_categories:
+            entry["provisional"] = True
+            if category_counts[cat] == 0:
+                entry["note"] = "no events recorded"
+            else:
+                entry["note"] = (
+                    f"insufficient data ({category_counts[cat]} events; "
+                    f"minimum {PILLAR_MIN_EVENTS} to count toward overall)"
+                )
+        elif overall_provisional:
+            entry["provisional"] = True
+            entry["note"] = (
+                f"below minimum volume ({category_counts[cat]} events; "
+                f"minimum {PILLAR_MIN_EVENTS} for a non-provisional score)"
+            )
+        by_category[cat] = entry
 
     return {
         "overall": overall,
-        "grade": overall_grade,
+        "grade": _grade(overall),
         "by_category": by_category,
         "event_count": len(events),
+        "overall_provisional": overall_provisional,
+        "pillar_min_events": PILLAR_MIN_EVENTS,
+        "overall_categories": overall_categories,
     }

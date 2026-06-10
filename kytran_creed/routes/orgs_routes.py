@@ -405,13 +405,16 @@ def org_profile_page(slug):
             if not isinstance(c, dict):
                 c = {"score": c if c is not None else 100.0, "grade": ""}
             grade = c.get("grade") or "—"
+            provisional = bool(c.get("provisional"))
             pillars.append(
                 (
                     cat.title(),
                     {
                         "score": round(float(c.get("score", 100.0)), 1),
                         "grade": grade,
-                        "color": _grade_color(grade),
+                        "color": "#8899aa" if provisional else _grade_color(grade),
+                        "provisional": provisional,
+                        "events": int(c.get("events", 0) or 0),
                     },
                 )
             )
