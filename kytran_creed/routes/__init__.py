@@ -6,6 +6,7 @@ def register_all_routes(app):
     from kytran_creed.routes.onboarding_routes import onboarding_bp
     from kytran_creed.routes.orgs_routes import org_pages_bp, orgs_bp
     from kytran_creed.routes.public_routes import public_bp
+    from kytran_creed.routes.standard_routes import standard_bp
     from kytran_creed.routes.tenant_portal_routes import tenant_portal_bp
 
     app.register_blueprint(aia_bp)
@@ -16,4 +17,5 @@ def register_all_routes(app):
     app.register_blueprint(orgs_bp)
     app.register_blueprint(org_pages_bp)
     app.register_blueprint(public_bp)
+    app.register_blueprint(standard_bp)
     app.register_blueprint(tenant_portal_bp)

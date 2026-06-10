@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 from flask import Blueprint, jsonify, render_template, request
 
 from kytran_creed.db import get_db
-from kytran_creed.models import GovernanceEvent
+from kytran_creed.models import GovernanceEvent, event_json_schema
 from kytran_creed.pg import get_pg, is_pg_available
 from kytran_creed.services.scoring_engine import calculate_scores
 
@@ -116,6 +116,19 @@ def _get_recent_events(days: int = 30, tenant_id: str | None = None) -> list[dic
 @api_bp.route("/docs")
 def api_docs():
     return render_template("api_docs.html")
+
+
+@api_bp.route("/schema")
+def event_schema():
+    """Machine-readable C.R.E.E.D. Event Schema v1 (JSON Schema 2020-12).
+    Generated from the validation constants in models.py — the published
+    standard cannot drift from what `POST /api/v1/events` accepts.
+    Human-readable companion: /standard."""
+    return (
+        jsonify(event_json_schema(request.host_url.rstrip("/"))),
+        200,
+        {"Cache-Control": "public, max-age=3600", "Access-Control-Allow-Origin": "*"},
+    )
 
 
 @api_bp.route("/events", methods=["POST"])

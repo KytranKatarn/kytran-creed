@@ -55,7 +55,7 @@ def create_app(config=None):
             return
         # Public multi-tenant pages (tasks #3894/#3905) — no login, no setup gate
         if (
-            request.path in ("/directory", "/get-scored")
+            request.path in ("/directory", "/get-scored", "/standard")
             or request.path.startswith("/org/")
             or request.path.startswith("/verify-email/")
         ):

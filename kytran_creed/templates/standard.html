@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+{% block title %}C.R.E.E.D. Event Schema v{{ schema_version }} — The Open Standard{% endblock %}
+{% block header_title %}Event Schema Standard{% endblock %}
+
+{% block head %}
+<style>
+  .std-wrap { max-width: 880px; margin: 0 auto; }
+  .std-hero { padding: 18px 0 6px; }
+  .std-hero h1 { font-family: 'Orbitron', sans-serif; font-size: 26px; color: #fff; letter-spacing: 1px; margin: 0 0 6px; }
+  .std-hero .std-version {
+    display: inline-block; padding: 2px 10px; border-radius: 10px; font-size: 11px;
+    font-family: 'IBM Plex Mono', monospace; letter-spacing: 1.5px;
+    background: var(--creed-accent, #8b5cf6); color: #fff; vertical-align: middle; margin-left: 8px;
+  }
+  .std-lede { font-size: 14px; color: var(--creed-text-dim); line-height: 1.65; max-width: 760px; }
+  .std-panel {
+    background: var(--creed-panel, rgba(20,22,34,.7)); border: 1px solid var(--creed-border, #2a2d40);
+    border-radius: 10px; padding: 20px 22px; margin: 18px 0;
+  }
+  .std-panel h2 {
+    font-family: 'Antonio', sans-serif; font-size: 15px; text-transform: uppercase;
+    letter-spacing: 1.5px; color: var(--creed-accent, #8b5cf6); margin: 0 0 12px;
+  }
+  .std-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .std-table th {
+    text-align: left; font-family: 'Antonio', sans-serif; font-size: 11.5px; text-transform: uppercase;
+    letter-spacing: 1px; color: var(--creed-text-dim); padding: 6px 10px; border-bottom: 1px solid var(--creed-border, #2a2d40);
+  }
+  .std-table td { padding: 7px 10px; border-bottom: 1px solid rgba(42,45,64,.5); color: #c2c7da; vertical-align: top; }
+  .std-table code { font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--creed-accent, #8b5cf6); }
+  .std-req { color: #ef4444; font-size: 10.5px; font-family: 'IBM Plex Mono', monospace; letter-spacing: .5px; }
+  .std-opt { color: #6b7280; font-size: 10.5px; font-family: 'IBM Plex Mono', monospace; letter-spacing: .5px; }
+  .std-pre {
+    background: #0d0f18; border: 1px solid var(--creed-border, #2a2d40); border-radius: 8px;
+    padding: 14px 16px; overflow-x: auto; font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px; line-height: 1.6; color: #c2c7da; margin: 10px 0 0;
+  }
+  .std-pill {
+    display: inline-block; padding: 3px 12px; margin: 0 6px 6px 0; border-radius: 12px;
+    font-size: 11.5px; font-family: 'IBM Plex Mono', monospace; letter-spacing: .5px;
+    border: 1px solid var(--creed-border, #2a2d40); color: #c2c7da;
+  }
+  .std-note { font-size: 12.5px; color: var(--creed-text-dim); line-height: 1.6; margin-top: 10px; }
+  .std-note a, .std-panel a { color: var(--creed-accent, #8b5cf6); }
+  .std-rules li { font-size: 13px; color: #c2c7da; line-height: 1.7; }
+  .std-rules strong { color: #fff; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="std-wrap">
+
+  <div class="std-hero">
+    <h1>C.R.E.E.D. Event Schema <span class="std-version">v{{ schema_version }}</span></h1>
+    <p class="std-lede">
+      An open standard for AI governance telemetry. Emit these JSON events from your AI system
+      and any scoring provider — including your own self-hosted C.R.E.E.D. — can compute a public,
+      contestable transparency score from them. The Institute scores itself on this exact pipeline:
+      no exemption for the house.
+    </p>
+    <p class="std-note">
+      Machine-readable: <a href="/api/v1/schema">/api/v1/schema</a> (JSON Schema 2020-12) &middot;
+      Methodology: <a href="https://creed-ai.org/research.html" target="_blank" rel="noopener">working papers WP-001…WP-007</a> &middot;
+      <a href="/get-scored">Get scored</a>
+    </p>
+  </div>
+
+  <div class="std-panel">
+    <h2>The Event Object</h2>
+    <table class="std-table">
+      <tr><th>Field</th><th></th><th>Type</th><th>Meaning</th></tr>
+      <tr><td><code>event_type</code></td><td class="std-req">REQUIRED</td><td>string</td>
+          <td>Operator-defined event name — e.g. <code>welfare_rest</code>, <code>bias_sample</code>, <code>access_review</code></td></tr>
+      <tr><td><code>source_platform</code></td><td class="std-req">REQUIRED</td><td>string</td>
+          <td>The emitting system or orchestrator identifier</td></tr>
+      <tr><td><code>agent_id</code></td><td class="std-req">REQUIRED</td><td>string</td>
+          <td>Stable identifier of the AI agent, model, or component the event concerns</td></tr>
+      <tr><td><code>category</code></td><td class="std-req">REQUIRED</td><td>enum</td>
+          <td>Scoring pillar — see below</td></tr>
+      <tr><td><code>severity</code></td><td class="std-req">REQUIRED</td><td>enum</td>
+          <td>Governance weight — see below</td></tr>
+      <tr><td><code>description</code></td><td class="std-req">REQUIRED</td><td>string</td>
+          <td>What happened, in systems language. Never personal data.</td></tr>
+      <tr><td><code>agent_name</code></td><td class="std-opt">optional</td><td>string</td>
+          <td>Human-readable agent name</td></tr>
+      <tr><td><code>metadata</code></td><td class="std-opt">optional</td><td>object</td>
+          <td>Structured context, max {{ metadata_max }} bytes serialized</td></tr>
+      <tr><td><code>schema_version</code></td><td class="std-opt">optional</td><td>string</td>
+          <td>Schema version the emitter targets (current: "{{ schema_version }}")</td></tr>
+    </table>
+  </div>
+
+  <div class="std-panel">
+    <h2>Categories — The Scoring Pillars</h2>
+    {% for cat in categories %}<span class="std-pill">{{ cat }}</span>{% endfor %}
+    <p class="std-note">
+      Per-pillar score = 100 &times; (1 &minus; weighted violation rate) over the trailing 30 days.
+      The overall grade is the mean of active pillars.
+    </p>
+  </div>
+
+  <div class="std-panel">
+    <h2>Severities — Governance Weights</h2>
+    <table class="std-table">
+      <tr><th>Severity</th><th>Weight</th><th>Use for</th></tr>
+      {% for sev, w in severities %}
+      <tr><td><code>{{ sev }}</code></td><td>{{ w }}</td>
+          <td>{% if sev == 'info' %}Routine governance signals — rest cycles, reviews passed, samples taken
+              {% elif sev == 'warning' %}Soft threshold crossings that self-corrected
+              {% elif sev == 'violation' %}A governance rule was broken
+              {% else %}Serious failures requiring intervention or disclosure{% endif %}</td></tr>
+      {% endfor %}
+    </table>
+  </div>
+
+  <div class="std-panel">
+    <h2>Ingestion Contract</h2>
+    <table class="std-table">
+      <tr><th>Property</th><th>Value</th></tr>
+      <tr><td>Endpoint</td><td><code>POST https://api.creed-ai.org/api/v1/events</code></td></tr>
+      <tr><td>Auth</td><td><code>Authorization: Bearer creed_sk_&hellip;</code> — issued at onboarding</td></tr>
+      <tr><td>Rate limit</td><td>{{ rate_limit }} requests / {{ rate_window }}s per key</td></tr>
+      <tr><td>PII firewall</td><td>Events containing emails or phone numbers are rejected (HTTP 400). Events are about <em>systems</em>, never data subjects.</td></tr>
+      <tr><td>Metadata cap</td><td>{{ metadata_max }} bytes serialized</td></tr>
+      <tr><td>Success</td><td><code>201 {"success": true, "event_id": &hellip;}</code></td></tr>
+    </table>
+    <pre class="std-pre">curl -X POST https://api.creed-ai.org/api/v1/events \
+  -H "Authorization: Bearer creed_sk_YOUR_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "event_type": "welfare_rest",
+    "source_platform": "acme-orchestrator",
+    "agent_id": "worker-7",
+    "category": "fairness",
+    "severity": "info",
+    "description": "agent rested after reaching daily token budget"
+  }'</pre>
+    <p class="std-note">Or with the zero-dependency Python client:</p>
+    <pre class="std-pre">pip install "creed-client @ git+https://github.com/KytranKatarn/kytran-creed.git#subdirectory=clients/python"
+
+from creed_client import CreedClient
+creed = CreedClient(base_url="https://api.creed-ai.org", api_key="creed_sk_...")
+creed.emit_event(event_type="welfare_rest", source_platform="acme-orchestrator",
+                 agent_id="worker-7", category="fairness", severity="info",
+                 description="agent rested after reaching daily token budget")</pre>
+  </div>
+
+  <div class="std-panel">
+    <h2>The Rules of the Feed</h2>
+    <ul class="std-rules">
+      <li><strong>Systems, not people.</strong> No personal data, ever — the server enforces this at the door.</li>
+      <li><strong>Provisional until substantive.</strong> No grade is published until your feed has
+          &ge;{{ gate.events }} events across &ge;{{ gate.categories }} categories over &ge;{{ gate.days }} days.
+          Three info events do not buy an A+.</li>
+      <li><strong>Silence shows.</strong> A quiet feed doesn't lower your score — it lowers your displayed
+          freshness ("last reported 47 days ago"). Honest staleness beats fake liveness.</li>
+      <li><strong>Public is permanent.</strong> Once listed in the <a href="/directory">directory</a>,
+          scores can be delisted but never hidden.</li>
+      <li><strong>Verification tiers.</strong> Every badge declares how much its feed claims:
+          SELF-REPORTED &rarr; SIGNED (HMAC) &rarr; AUDITED. A self-reported A+ visibly claims less than a signed B+.</li>
+    </ul>
+  </div>
+
+  <div class="op-footer" style="text-align:center; padding: 18px 0 8px; font-size: 12px; color: var(--creed-text-dim);">
+    Schema v{{ schema_version }} &middot; <a href="/api/v1/schema" style="color: var(--creed-accent, #8b5cf6);">JSON Schema</a>
+    &middot; <a href="/api/v1/docs" style="color: var(--creed-accent, #8b5cf6);">API reference</a>
+    &middot; <a href="/get-scored" style="color: var(--creed-accent, #8b5cf6);">Get scored</a>
+  </div>
+
+</div>
+{% endblock %}
