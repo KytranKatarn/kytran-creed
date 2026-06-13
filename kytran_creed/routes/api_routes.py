@@ -76,11 +76,27 @@ def _store_event(event: GovernanceEvent, tenant_id: str | None = None) -> int:
 
 
 def _get_recent_events(days: int = 30, tenant_id: str | None = None) -> list[dict]:
-    """Fetch events from the last N days for scoring (optionally tenant-scoped)."""
+    """Fetch ETHICS events from the last N days for scoring (optionally
+    tenant-scoped).
+
+    EXCLUDES ``category='welfare'``. AI-workforce welfare is a DISTINCT public
+    metric scored by ``services/welfare_engine.py`` from welfare events; it is
+    already absent from ``scoring_engine.CATEGORIES`` so it never moves the ethics
+    SCORE. But ``calculate_scores`` sets ``event_count = len(events)``, so an
+    unfiltered fetch would let welfare ingest INFLATE the public ethics
+    ``event_count`` tally (and the per-pillar event totals are unaffected, but the
+    headline count would lie). Filtering welfare out here keeps the ethics
+    event_count honest while the welfare endpoints (which run their OWN
+    ``category='welfare'`` fetch in welfare_routes._get_welfare_events) are
+    untouched. (Phase 3, #379.)
+    """
     pg = get_pg()
     if pg:
         try:
-            sql = "SELECT category, severity FROM governance_events WHERE created_at >= NOW() - INTERVAL '%s days'"
+            sql = (
+                "SELECT category, severity FROM governance_events "
+                "WHERE created_at >= NOW() - INTERVAL '%s days' AND category != 'welfare'"
+            )
             params: list = [days]
             if tenant_id:
                 sql += " AND tenant_id = %s"
@@ -101,7 +117,7 @@ def _get_recent_events(days: int = 30, tenant_id: str | None = None) -> list[dic
     conn = get_db()
     try:
         since = (datetime.utcnow() - timedelta(days=days)).strftime("%Y-%m-%d %H:%M:%S")
-        sql = "SELECT category, severity FROM governance_events WHERE created_at >= ?"
+        sql = "SELECT category, severity FROM governance_events WHERE created_at >= ? AND category != 'welfare'"
         params = [since]
         if tenant_id:
             sql += " AND tenant_id = ?"

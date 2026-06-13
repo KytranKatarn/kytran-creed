@@ -147,3 +147,49 @@ def test_welfare_event_accepted_at_ingest_but_not_in_ethics_scores(client):
     scores = client.get("/api/v1/scores").get_json()
     for cat in CATEGORIES:
         assert scores["by_category"][cat]["events"] == 0
+
+
+def test_welfare_ingest_does_not_inflate_ethics_event_count(client):
+    """Phase 3 nit: welfare events must NOT inflate the public ethics event_count.
+
+    _get_recent_events now excludes category='welfare', so /api/v1/scores
+    event_count counts ONLY ethics events. Ingest a mix and assert the ethics
+    tally reflects the ethics events only, and the overall + 6 pillars are
+    unchanged by the welfare ingest.
+    """
+    def post(category, event_type, severity, **kw):
+        body = {
+            "event_type": event_type,
+            "source_platform": "archie-hub",
+            "agent_id": kw.get("agent_id", "agent-1"),
+            "agent_name": "Forge",
+            "category": category,
+            "severity": severity,
+            "description": "test event",
+            "metadata": kw.get("metadata", {}),
+        }
+        resp = client.post("/api/v1/events", json=body)
+        assert resp.status_code == 201
+
+    # Baseline: ethics-only feed.
+    post("transparency", "model_disclosure", "info")
+    post("safety", "guardrail_pass", "info")
+    base = client.get("/api/v1/scores").get_json()
+    assert base["event_count"] == 2
+
+    # Ingest a pile of welfare events (would inflate event_count if not filtered).
+    for _ in range(10):
+        post("welfare", "welfare_tokens", "critical", metadata={"dimension": "tokens"})
+
+    after = client.get("/api/v1/scores").get_json()
+    # event_count counts ONLY the 2 ethics events — welfare is excluded.
+    assert after["event_count"] == 2
+    # Overall + every pillar identical to the pre-welfare baseline.
+    assert after["overall"] == base["overall"]
+    for cat in CATEGORIES:
+        assert after["by_category"][cat]["events"] == base["by_category"][cat]["events"]
+        assert after["by_category"][cat]["score"] == base["by_category"][cat]["score"]
+
+    # And the welfare endpoint DOES see those welfare events (its own fetch).
+    welfare = client.get("/api/v1/welfare").get_json()
+    assert welfare["event_count"] == 10
