@@ -1,7 +1,22 @@
 from dataclasses import dataclass, field
 from typing import Optional
 
-VALID_CATEGORIES = {"transparency", "fairness", "safety", "privacy", "accountability", "environmental"}
+# Ethics pillar categories (drive scoring_engine.CATEGORIES / the 6-pillar score)
+# PLUS the standalone 'welfare' category. 'welfare' is an ACCEPTED ingest category
+# so the hub's Phase 3 emitter can post AI-workforce welfare events, but it is
+# DELIBERATELY ABSENT from scoring_engine.CATEGORIES — welfare events never count
+# toward the transparency/fairness/safety/privacy/accountability/environmental
+# pillars or the overall ethics grade. The parallel welfare metric is scored by
+# services/welfare_engine.py from category='welfare' events only.
+VALID_CATEGORIES = {
+    "transparency",
+    "fairness",
+    "safety",
+    "privacy",
+    "accountability",
+    "environmental",
+    "welfare",
+}
 VALID_SEVERITIES = {"info", "warning", "violation", "critical"}
 REQUIRED_EVENT_FIELDS = {"event_type", "source_platform", "agent_id", "category", "severity", "description"}
 
