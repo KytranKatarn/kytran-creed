@@ -1,6 +1,11 @@
 import os
 
 SEVERITY_WEIGHTS = {"info": 0, "warning": 1, "violation": 3, "critical": 5}
+# The 6 ethics pillars. DO NOT add 'welfare' here — AI-workforce welfare is a
+# PARALLEL, distinct metric scored by services/welfare_engine.py from
+# category='welfare' events. Welfare must never contribute to the overall ethics
+# score. Because only these categories are summed below, a welfare event is
+# silently ignored by this scorer even though it is a valid ingest category.
 CATEGORIES = ["transparency", "fairness", "safety", "privacy", "accountability", "environmental"]
 GRADE_THRESHOLDS = [(95, "A+"), (90, "A"), (85, "B+"), (80, "B"), (70, "C"), (60, "D")]
 
