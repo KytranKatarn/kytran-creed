@@ -79,6 +79,18 @@ def _grade(score: float) -> str:
     return "F"
 
 
+def grade_for(score: float | None) -> str:
+    """Public grade mapper: numeric score -> letter band; PROVISIONAL when None.
+
+    Lets callers (e.g. the welfare history/CSV dataset) grade a raw per-day
+    score without reaching into the private ``_grade``. A ``None`` score (a day
+    or window with no scorable events) is PROVISIONAL, never a fake 'F'.
+    """
+    if score is None:
+        return "PROVISIONAL"
+    return _grade(score)
+
+
 def _resolve_dimension(event: dict) -> str | None:
     """Map a welfare event to one of the four dimensions.
 

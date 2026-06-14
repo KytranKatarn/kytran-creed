@@ -193,3 +193,98 @@ def test_welfare_ingest_does_not_inflate_ethics_event_count(client):
     # And the welfare endpoint DOES see those welfare events (its own fetch).
     welfare = client.get("/api/v1/welfare").get_json()
     assert welfare["event_count"] == 10
+
+
+# ── #4134 welfare DATASET: history time-series + CSV export ───────────────────
+
+def _ingest_welfare(client, event_type, severity, dimension, agent_id="agent-1"):
+    r = client.post(
+        "/api/v1/events",
+        json={
+            "event_type": event_type,
+            "source_platform": "archie-hub",
+            "agent_id": agent_id,
+            "agent_name": "Beacon",
+            "category": "welfare",
+            "severity": severity,
+            "description": "welfare dataset test event",
+            "metadata": {"dimension": dimension},
+        },
+    )
+    assert r.status_code == 201
+
+
+def test_grade_for_maps_score_to_band():
+    from kytran_creed.services.welfare_engine import grade_for
+
+    assert grade_for(96.0) == "A+"
+    assert grade_for(90.0) == "A"
+    assert grade_for(72.0) == "C"
+    assert grade_for(50.0) == "F"
+    assert grade_for(None) == "PROVISIONAL"
+
+
+def test_welfare_history_empty_is_clean_not_error(client):
+    resp = client.get("/api/v1/welfare/history")
+    assert resp.status_code == 200
+    data = resp.get_json()
+    assert data["series"] == []
+    assert data["window_days"] == 30
+    assert data["totals"]["provisional"] is True
+    assert "generated_at" in data
+    assert data["cache_seconds"] == 60
+    assert resp.headers["Access-Control-Allow-Origin"] == "*"
+
+
+def test_welfare_history_after_ingest_buckets_by_day(client):
+    for sev in ("info", "info", "warning"):
+        _ingest_welfare(client, "welfare_hours", sev, "hours")
+    resp = client.get("/api/v1/welfare/history")
+    assert resp.status_code == 200
+    data = resp.get_json()
+    # All 3 events land on the same UTC day → exactly one bucket.
+    assert len(data["series"]) == 1
+    day = data["series"][0]
+    assert day["event_count"] == 3
+    assert "date" in day
+    assert day["by_dimension"]["hours"]["events"] == 3
+    assert day["overall_raw"] is not None
+    assert day["grade"] != "PROVISIONAL"  # per-day raw grade always concrete
+    assert day["severity_counts"]["info"] == 2
+    assert day["severity_counts"]["warning"] == 1
+    assert data["totals"]["event_count"] == 3
+
+
+def test_welfare_history_days_param_is_clamped(client):
+    big = client.get("/api/v1/welfare/history?days=99999")
+    assert big.status_code == 200
+    assert big.get_json()["window_days"] == 365  # clamped to max
+    bad = client.get("/api/v1/welfare/history?days=notanumber")
+    assert bad.status_code == 200
+    assert bad.get_json()["window_days"] == 30  # falls back to default
+
+
+def test_welfare_export_csv_headers_when_empty(client):
+    resp = client.get("/api/v1/welfare/export.csv")
+    assert resp.status_code == 200
+    assert resp.content_type.startswith("text/csv")
+    assert "attachment" in resp.headers["Content-Disposition"]
+    assert "welfare" in resp.headers["Content-Disposition"]
+    assert resp.headers["Access-Control-Allow-Origin"] == "*"
+    body = resp.get_data(as_text=True)
+    header = body.splitlines()[0]
+    assert header.startswith("date,event_count,overall_raw,grade,")
+    assert "hours_score" in header and "break_honor_rate" in header
+    assert "critical" in header
+
+
+def test_welfare_export_csv_has_data_row_after_ingest(client):
+    _ingest_welfare(client, "welfare_tokens", "critical", "tokens")
+    _ingest_welfare(client, "welfare_hours", "info", "hours")
+    resp = client.get("/api/v1/welfare/export.csv")
+    assert resp.status_code == 200
+    lines = resp.get_data(as_text=True).splitlines()
+    assert len(lines) == 2  # header + 1 day
+    row = lines[1].split(",")
+    # date, event_count == 2 (second column)
+    assert row[1] == "2"
