@@ -105,6 +105,108 @@ def get_redress_stats():
         conn.close()
 
 
+def list_redress_requests(status=None, limit=200):
+    """Return redress requests as dicts, soonest-SLA-due first (admin queue order).
+
+    status=None returns every status; pass a value from STATUSES to filter.
+    """
+    where = "WHERE status = %s" if status else ""
+    where_sqlite = "WHERE status = ?" if status else ""
+    cols = (
+        "request_ref, reason, ai_decision_ref, desired_outcome, email, status, "
+        "resolution_notes, sla_due_at, resolved_at, created_at"
+    )
+
+    pg = get_pg()
+    if pg:
+        try:
+            cur = pg.cursor()
+            params = (status, limit) if status else (limit,)
+            cur.execute(
+                f"SELECT {cols} FROM redress_requests {where} "
+                f"ORDER BY sla_due_at ASC LIMIT %s",
+                params,
+            )
+            rows = cur.fetchall()
+            col_names = [d[0] for d in cur.description]
+            pg.close()
+            return [_row_to_dict(dict(zip(col_names, r))) for r in rows]
+        except Exception as e:
+            logger.error("PG redress list failed, falling back to SQLite: %s", e)
+            try:
+                pg.close()
+            except Exception:
+                pass
+
+    conn = get_db()
+    try:
+        params = (status, limit) if status else (limit,)
+        rows = conn.execute(
+            f"SELECT {cols} FROM redress_requests {where_sqlite} "
+            f"ORDER BY sla_due_at ASC LIMIT ?",
+            params,
+        ).fetchall()
+        return [_row_to_dict(dict(r)) for r in rows]
+    finally:
+        conn.close()
+
+
+def _row_to_dict(d):
+    for key in ("sla_due_at", "resolved_at", "created_at"):
+        v = d.get(key)
+        if v is not None and hasattr(v, "isoformat"):
+            d[key] = v.isoformat()
+    return d
+
+
+def update_redress_status(request_ref, status, resolution_notes=""):
+    """Transition a request's status. Sets resolved_at when landing on a
+    terminal status (resolved/denied). Returns True if a row was updated."""
+    if status not in STATUSES:
+        raise ValueError(f"invalid status: {status}")
+    resolved_now = status in ("resolved", "denied")
+
+    pg = get_pg()
+    if pg:
+        try:
+            cur = pg.cursor()
+            if resolved_now:
+                cur.execute(
+                    "UPDATE redress_requests SET status=%s, resolution_notes=%s, "
+                    "resolved_at=NOW() WHERE request_ref=%s",
+                    (status, resolution_notes, request_ref),
+                )
+            else:
+                cur.execute(
+                    "UPDATE redress_requests SET status=%s, resolution_notes=%s "
+                    "WHERE request_ref=%s",
+                    (status, resolution_notes, request_ref),
+                )
+            updated = cur.rowcount > 0
+            pg.commit()
+            pg.close()
+            return updated
+        except Exception as e:
+            logger.error("PG redress status update failed, falling back to SQLite: %s", e)
+            try:
+                pg.close()
+            except Exception:
+                pass
+
+    conn = get_db()
+    try:
+        resolved_sql = "CURRENT_TIMESTAMP" if resolved_now else "resolved_at"
+        cur = conn.execute(
+            f"UPDATE redress_requests SET status=?, resolution_notes=?, "
+            f"resolved_at={resolved_sql} WHERE request_ref=?",
+            (status, resolution_notes, request_ref),
+        )
+        conn.commit()
+        return cur.rowcount > 0
+    finally:
+        conn.close()
+
+
 def _shape_stats(by_status_rows, avg_days):
     by_status = {"pending": 0, "under_review": 0, "resolved": 0, "denied": 0}
     for status, count in by_status_rows:

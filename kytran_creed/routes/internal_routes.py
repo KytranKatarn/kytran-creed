@@ -11,7 +11,7 @@ CORS surface.
 
 import logging
 
-from flask import Blueprint, jsonify
+from flask import Blueprint, jsonify, request
 
 from kytran_creed.auth import internal_or_admin
 from kytran_creed.pg import get_pg
@@ -132,3 +132,42 @@ def internal_applications():
         except Exception:
             pass
         return jsonify({"success": False, "error": "applications unavailable"}), 500
+
+
+@internal_bp.route("/redress-requests", methods=["GET"])
+@internal_or_admin
+def internal_redress_requests():
+    """List redress requests (creed-ai.org accountability.html), soonest-SLA-due
+    first. Optional ?status= filter. Works on the PG or SQLite backend."""
+    from kytran_creed.redress_store import STATUSES, list_redress_requests
+
+    status = request.args.get("status")
+    if status and status not in STATUSES:
+        return jsonify({"success": False, "error": f"status must be one of {sorted(STATUSES)}"}), 400
+    try:
+        items = list_redress_requests(status=status)
+        return jsonify({"success": True, "requests": items, "count": len(items)})
+    except Exception as e:
+        logger.error("internal_redress_requests failed: %s", e)
+        return jsonify({"success": False, "error": "redress list unavailable"}), 500
+
+
+@internal_bp.route("/redress-requests/<request_ref>/resolve", methods=["POST"])
+@internal_or_admin
+def internal_redress_resolve(request_ref):
+    """Transition a redress request's status. Body: {status, resolution_notes}."""
+    from kytran_creed.redress_store import STATUSES, update_redress_status
+
+    data = request.get_json(silent=True) or {}
+    status = data.get("status")
+    notes = (data.get("resolution_notes") or "").strip()
+    if status not in STATUSES:
+        return jsonify({"success": False, "error": f"status must be one of {sorted(STATUSES)}"}), 400
+    try:
+        updated = update_redress_status(request_ref, status, notes)
+    except Exception as e:
+        logger.error("internal_redress_resolve %s failed: %s", request_ref, e)
+        return jsonify({"success": False, "error": "update failed"}), 500
+    if not updated:
+        return jsonify({"success": False, "error": "request_ref not found"}), 404
+    return jsonify({"success": True, "request_ref": request_ref, "status": status})
