@@ -45,6 +45,22 @@ CREATE TABLE IF NOT EXISTS incident_log (
 CREATE INDEX IF NOT EXISTS idx_incident_disclosed ON incident_log(disclosed, disclosed_at);
 CREATE INDEX IF NOT EXISTS idx_incident_severity ON incident_log(severity);
 
+CREATE TABLE IF NOT EXISTS redress_requests (
+    id SERIAL PRIMARY KEY,
+    request_ref VARCHAR(40) UNIQUE NOT NULL,
+    reason TEXT NOT NULL,
+    ai_decision_ref VARCHAR(200),
+    desired_outcome TEXT,
+    email VARCHAR(200),
+    status VARCHAR(20) NOT NULL DEFAULT 'pending',
+    resolution_notes TEXT,
+    sla_due_at TIMESTAMP NOT NULL,
+    resolved_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_redress_status ON redress_requests(status);
+CREATE INDEX IF NOT EXISTS idx_redress_created ON redress_requests(created_at);
+
 CREATE TABLE IF NOT EXISTS aia_assessments (
     id SERIAL PRIMARY KEY,
     name VARCHAR(300) NOT NULL,

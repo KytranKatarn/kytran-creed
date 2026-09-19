@@ -86,8 +86,9 @@ def create_app(config=None):
     def add_cors_pna_headers(resp):
         from flask import request
 
-        # The public read-only API + badges are consumed cross-origin (creed-ai.org
-        # governance widget, WTF, etc.). When a visitor's DNS resolves
+        # The public API + badges are consumed cross-origin (creed-ai.org governance
+        # widget, WTF, the accountability/redress-request form, etc.) — mostly reads,
+        # plus one POST (redress-request). When a visitor's DNS resolves
         # creed.kytranempowerment.com to a PRIVATE/LAN IP — e.g. AdGuard split-horizon
         # on the hub LAN returns 192.168.1.200 — Chrome's Private Network Access blocks
         # the public-origin -> private-address fetch unless the (PNA) preflight answers
@@ -97,7 +98,7 @@ def create_app(config=None):
         # so the live feed works from the LAN too — not just from the public internet.
         if request.path.startswith("/api/") or request.path.startswith("/badge/"):
             resp.headers["Access-Control-Allow-Origin"] = "*"
-            resp.headers["Access-Control-Allow-Methods"] = "GET, OPTIONS, HEAD"
+            resp.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS, HEAD"
             resp.headers["Access-Control-Allow-Headers"] = "Content-Type"
             resp.headers["Access-Control-Allow-Private-Network"] = "true"
             resp.headers["Access-Control-Max-Age"] = "86400"
