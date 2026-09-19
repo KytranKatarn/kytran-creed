@@ -11,8 +11,11 @@ acceptable for low-stakes badge traffic.
 """
 
 import logging
+import re
 import threading
 import time
+import uuid
+from collections import defaultdict, deque
 from datetime import datetime, timedelta
 
 try:
@@ -217,6 +220,131 @@ def public_oversight():
             "Cache-Control": "public, max-age=300",
             "Access-Control-Allow-Origin": "*",
         },
+    )
+
+
+# --- Redress requests (accountability.html) -----------------------------------
+_EMAIL_RE = re.compile(r"^[\w.+-]+@[\w-]+\.[\w.-]{2,}$")
+_REASON_MAX_LEN = 5000
+
+# Filing abuse guard: separate, stricter bucket than the read endpoints — a
+# redress request is a serious human-reviewed submission, not badge traffic.
+REDRESS_RATE_LIMIT = 5
+REDRESS_RATE_WINDOW = 3600
+_redress_hits: dict[str, deque] = defaultdict(deque)
+
+
+def _redress_rate_limited(ip: str) -> bool:
+    now = time.time()
+    hits = _redress_hits[ip]
+    while hits and hits[0] < now - REDRESS_RATE_WINDOW:
+        hits.popleft()
+    if len(hits) >= REDRESS_RATE_LIMIT:
+        return True
+    hits.append(now)
+    return False
+
+
+@public_bp.route("/accountability", methods=["GET"])
+def public_accountability():
+    """Public read-only redress-request stats for accountability.html.
+
+    Returns {total, by_status, avg_resolution_days, sla_business_days,
+    resolution_is_human}. CORS-open, 60s cache, per-IP rate limited.
+    """
+    ip = request.headers.get("X-Forwarded-For", request.remote_addr or "unknown")
+    ip = ip.split(",")[0].strip()
+    if _rate_limited(ip):
+        return (
+            jsonify({"error": "rate_limited", "retry_after": RATE_WINDOW}),
+            429,
+            {"Access-Control-Allow-Origin": "*", "Retry-After": str(RATE_WINDOW)},
+        )
+
+    from kytran_creed.redress_store import get_redress_stats
+
+    try:
+        stats = get_redress_stats()
+    except Exception as e:
+        logger.error("public_accountability failed: %s", e)
+        stats = {
+            "total": 0,
+            "by_status": {"pending": 0, "under_review": 0, "resolved": 0, "denied": 0},
+            "avg_resolution_days": None,
+            "sla_business_days": 5,
+            "resolution_is_human": True,
+        }
+
+    return (
+        jsonify(stats),
+        200,
+        {"Cache-Control": "public, max-age=60", "Access-Control-Allow-Origin": "*"},
+    )
+
+
+@public_bp.route("/redress-request", methods=["POST"])
+def public_redress_request():
+    """File a redress request contesting an AI-driven decision.
+
+    Body: {reason (required), ai_decision_ref, desired_outcome, email}.
+    Returns {request_ref, sla_due_at} on success. Never auto-resolves — a
+    human reviewer works the queue. CORS-open, strictly rate limited (5/hr/IP).
+    """
+    data = request.get_json(silent=True) or {}
+    reason = (data.get("reason") or "").strip()
+    ai_decision_ref = (data.get("ai_decision_ref") or "").strip()[:200]
+    desired_outcome = (data.get("desired_outcome") or "").strip()
+    email = (data.get("email") or "").strip()
+
+    # Validate BEFORE consuming rate-limit budget — a user who fumbles the
+    # form (blank reason, typo'd email) shouldn't burn their 5/hr allowance
+    # before they can submit a real request.
+    if not reason:
+        return (
+            jsonify({"error": "Please describe why you are contesting the decision."}),
+            400,
+            {"Access-Control-Allow-Origin": "*"},
+        )
+    if len(reason) > _REASON_MAX_LEN:
+        reason = reason[:_REASON_MAX_LEN]
+    if email and not _EMAIL_RE.match(email):
+        return (
+            jsonify({"error": "Please provide a valid email address, or leave it blank."}),
+            400,
+            {"Access-Control-Allow-Origin": "*"},
+        )
+
+    ip = request.headers.get("X-Forwarded-For", request.remote_addr or "unknown")
+    ip = ip.split(",")[0].strip()
+    if _redress_rate_limited(ip):
+        return (
+            jsonify({"error": "rate_limited", "retry_after": REDRESS_RATE_WINDOW}),
+            429,
+            {"Access-Control-Allow-Origin": "*", "Retry-After": str(REDRESS_RATE_WINDOW)},
+        )
+
+    from kytran_creed.redress_store import store_redress_request
+
+    request_ref = "RR-" + uuid.uuid4().hex[:8].upper()
+    try:
+        row_id, sla_due_at = store_redress_request(
+            request_ref, reason, ai_decision_ref, desired_outcome, email
+        )
+    except Exception as e:
+        logger.error("public_redress_request store failed: %s", e)
+        row_id, sla_due_at = None, None
+
+    if row_id is None:
+        return (
+            jsonify({"error": "Could not submit — please try again."}),
+            502,
+            {"Access-Control-Allow-Origin": "*"},
+        )
+
+    return (
+        jsonify({"request_ref": request_ref, "sla_due_at": sla_due_at.isoformat() + "Z"}),
+        201,
+        {"Access-Control-Allow-Origin": "*"},
     )
 
 

@@ -71,6 +71,19 @@ def init_db(path):
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
+        CREATE TABLE IF NOT EXISTS redress_requests (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            request_ref TEXT UNIQUE NOT NULL,
+            reason TEXT NOT NULL,
+            ai_decision_ref TEXT,
+            desired_outcome TEXT,
+            email TEXT,
+            status TEXT NOT NULL DEFAULT 'pending',
+            resolution_notes TEXT,
+            sla_due_at TIMESTAMP NOT NULL,
+            resolved_at TIMESTAMP,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
         CREATE TABLE IF NOT EXISTS tenants (
             id TEXT PRIMARY KEY,
             slug TEXT UNIQUE NOT NULL,
