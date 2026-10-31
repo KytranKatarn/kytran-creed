@@ -144,7 +144,10 @@
     <span class="api-method method-get">GET</span>
     <span class="api-path">/api/v1/events</span>
   </div>
-  <p class="api-desc">List governance events with optional filtering.</p>
+  <p class="api-desc">List governance events with optional filtering. <strong>Tenant-scoped:</strong>
+  a request with <code>Authorization: Bearer creed_sk_…</code> returns only that organisation's
+  events. A keyless request returns the C.R.E.E.D. Institute's own feed, which is the public
+  transparency surface — other tenants' events are never readable without their key.</p>
   <div class="api-params">
     <div class="api-params-title">Query Parameters</div>
     <ul>
@@ -236,7 +239,9 @@
     <span class="api-method method-get">GET</span>
     <span class="api-path">/api/v1/audit</span>
   </div>
-  <p class="api-desc">Get the audit log of administrative actions.</p>
+  <p class="api-desc">Get the audit log of administrative actions. <strong>Requires an authenticated
+  admin session or the <code>X-Internal-Key</code> header</strong> — entries include
+  <code>user_id</code> and <code>ip_address</code>, so this endpoint is not public.</p>
   <div class="api-params">
     <div class="api-params-title">Query Parameters</div>
     <ul>
@@ -246,7 +251,7 @@
   </div>
   <div class="api-example">
     <div class="api-example-label">Request</div>
-    <pre><code>curl "https://creed.kytranempowerment.com/api/v1/audit?limit=5"</code></pre>
+    <pre><code>curl -H "X-Internal-Key: $CREED_INTERNAL_KEY" "https://creed.kytranempowerment.com/api/v1/audit?limit=5"</code></pre>
     <div class="api-example-label">Response (200)</div>
     <pre><code>{
   "entries": [

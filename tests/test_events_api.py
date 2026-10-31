@@ -41,8 +41,22 @@ def test_get_events_returns_list(client):
     assert len(data["events"]) >= 1
 
 
-def test_get_audit_trail(client):
+def test_get_audit_requires_auth(client):
+    # Audit rows carry user_id + ip_address — anonymous access is refused.
+    resp = client.get("/api/v1/audit")
+    assert resp.status_code == 403
+
+
+def test_get_audit_admin_session_allowed(app, client):
+    from kytran_creed.auth import create_admin
+
+    create_admin("auditor", "correct-horse-battery")
+    login = client.post(
+        "/login",
+        data={"username": "auditor", "password": "correct-horse-battery"},
+    )
+    assert login.status_code == 302
+
     resp = client.get("/api/v1/audit")
     assert resp.status_code == 200
-    data = resp.get_json()
-    assert "entries" in data
+    assert "entries" in resp.get_json()
