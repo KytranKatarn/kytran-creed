@@ -3,6 +3,7 @@ import logging
 from datetime import datetime, timedelta
 from flask import Blueprint, jsonify, render_template, request
 
+from kytran_creed.auth import internal_or_admin
 from kytran_creed.db import get_db
 from kytran_creed.models import GovernanceEvent, event_json_schema
 from kytran_creed.pg import get_pg, is_pg_available
@@ -254,6 +255,30 @@ def post_incident():
 
 @api_bp.route("/events", methods=["GET"])
 def get_events():
+    """List governance events, TENANT-SCOPED (task #7548).
+
+    Contract:
+    - ``Authorization: Bearer creed_sk_…`` → that tenant's events only.
+    - no key → the Institute tenant, whose feed IS the public transparency
+      surface (``/api/v1/scores`` and the creed-ai.org widgets read the same
+      tenant). No other tenant's events are readable without its own key.
+    - ``REQUIRE_READ_KEYS=true`` → keyless reads are rejected (optional
+      kill-switch, mirrors REQUIRE_INGEST_KEYS).
+
+    Before this, the endpoint returned every tenant's events anonymously.
+    """
+    from kytran_creed.pg import get_institute_tenant_id
+    from kytran_creed.tenant_auth import keyless_read_rejected, resolve_tenant
+
+    tenant_id, auth_err = resolve_tenant()
+    if auth_err:
+        return auth_err
+    if tenant_id is None:
+        rejected = keyless_read_rejected()
+        if rejected:
+            return rejected
+        tenant_id = get_institute_tenant_id() or _SQLITE_INSTITUTE_TENANT
+
     category = request.args.get("category")
     severity = request.args.get("severity")
     limit = min(int(request.args.get("limit", 50)), 500)
@@ -270,7 +295,9 @@ def get_events():
             if severity:
                 conditions.append("severity = %s")
                 params.append(severity)
-            where = ("WHERE " + " AND ".join(conditions)) if conditions else ""
+            conditions.append("tenant_id = %s")
+            params.append(tenant_id)
+            where = "WHERE " + " AND ".join(conditions)
             params += [limit, offset]
             cur = pg.cursor()
             cur.execute(
@@ -299,7 +326,9 @@ def get_events():
         if severity:
             conditions.append("severity = ?")
             params.append(severity)
-        where = ("WHERE " + " AND ".join(conditions)) if conditions else ""
+        conditions.append("tenant_id = ?")
+        params.append(tenant_id)
+        where = "WHERE " + " AND ".join(conditions)
         params += [limit, offset]
         cur = conn.execute(
             f"SELECT id, event_type, source_platform, agent_id, agent_name, category, severity, description, created_at FROM governance_events {where} ORDER BY created_at DESC LIMIT ? OFFSET ?",
@@ -312,7 +341,13 @@ def get_events():
 
 
 @api_bp.route("/audit", methods=["GET"])
+@internal_or_admin
 def get_audit():
+    """Administrative audit trail — admin session or X-Internal-Key required.
+
+    The rows carry ``user_id`` and ``ip_address``, so this endpoint must never
+    be world-readable (task #7548). It was anonymous before this guard.
+    """
     limit = min(int(request.args.get("limit", 50)), 500)
     offset = int(request.args.get("offset", 0))
 

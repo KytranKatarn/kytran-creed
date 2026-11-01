@@ -144,6 +144,27 @@ def keyless_rejected():
     return None
 
 
+def keyless_read_rejected():
+    """Optional kill-switch for keyless READS (env REQUIRE_READ_KEYS).
+
+    Default OFF: a keyless ``GET /api/v1/events`` returns the Institute tenant,
+    which is the public transparency surface (the creed-ai.org widgets read the
+    same tenant). Turning this on makes even that feed require a key — useful
+    for deployments where no data should be anonymous at all.
+
+    Tenant isolation does NOT depend on this flag: a keyless read can only ever
+    reach the Institute, and every other tenant needs its own key either way.
+    """
+    import os
+
+    if os.getenv("REQUIRE_READ_KEYS", "").lower() in ("1", "true", "yes"):
+        return (
+            jsonify({"success": False, "error": "API key required (Authorization: Bearer creed_sk_…)"}),
+            401,
+        )
+    return None
+
+
 def ingest_guard(description: str, metadata_str: str):
     """PII firewall + metadata cap for key-authenticated (external) ingest.
 

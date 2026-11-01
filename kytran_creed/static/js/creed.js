@@ -44,14 +44,23 @@ function esc(str) {
 
 // ── Category Cards ────────────────────────────────────────────────────────────
 
-function renderCategoryCard(name, score) {
+function renderCategoryCard(name, entry) {
   var grid = document.getElementById("category-grid");
   if (!grid) return;
+
+  // /api/v1/scores returns by_category[cat] = {score, events, grade,
+  // provisional?, note?}. Tolerate a bare number too, so this renderer cannot
+  // silently break again if the payload shape changes.
+  var raw = entry && typeof entry === "object" ? entry.score : entry;
+  var score = Number(raw);
+  if (!isFinite(score)) return;
 
   var id = "cat-" + name.replace(/\s+/g, "-");
   var card = document.getElementById(id);
 
-  var grade = scoreGrade(score);
+  var grade = entry && typeof entry === "object" && entry.grade
+    ? entry.grade
+    : scoreGrade(score);
   var cls = scoreClass(score);
   var pct = Math.max(0, Math.min(100, score));
 
@@ -61,6 +70,7 @@ function renderCategoryCard(name, score) {
     card.id = id;
     grid.appendChild(card);
   }
+  card.title = entry && typeof entry === "object" && entry.note ? entry.note : "";
 
   // Build DOM safely
   var nameDiv = document.createElement("div");

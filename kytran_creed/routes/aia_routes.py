@@ -27,25 +27,28 @@ AIA_QUESTIONS = [
 REQUIRED_FIELDS = {"name", "purpose", "affected_parties", "human_oversight"}
 
 
-def _get_pg():
+def _institute_tenant_id():
     try:
-        from kytran_creed.pg import get_pg
-        return get_pg()
+        from kytran_creed.pg import get_institute_tenant_id
+
+        tenant_id = get_institute_tenant_id()
+        if tenant_id:
+            return tenant_id
     except Exception:
-        return None
+        pass
+    return "00000000-0000-0000-0000-000000000001"
 
 
-def _get_db():
-    from kytran_creed.db import get_db
-    return get_db()
-
-
-def _list_assessments():
+def _list_assessments(tenant_id):
     pg = _get_pg()
     if pg:
         try:
             cur = pg.cursor()
-            cur.execute("SELECT id, name, risk_tier, decision_type, status, created_at FROM aia_assessments ORDER BY created_at DESC")
+            cur.execute(
+                "SELECT id, name, risk_tier, decision_type, status, created_at FROM aia_assessments "
+                "WHERE tenant_id = %s OR tenant_id IS NULL ORDER BY created_at DESC",
+                (tenant_id,),
+            )
             cols = [d[0] for d in cur.description]
             rows = [dict(zip(cols, r)) for r in cur.fetchall()]
             pg.close()
@@ -58,18 +61,25 @@ def _list_assessments():
                 pass
     conn = _get_db()
     try:
-        cur = conn.execute("SELECT id, name, risk_tier, decision_type, status, created_at FROM aia_assessments ORDER BY created_at DESC")
+        cur = conn.execute(
+            "SELECT id, name, risk_tier, decision_type, status, created_at FROM aia_assessments "
+            "WHERE tenant_id = ? OR tenant_id IS NULL ORDER BY created_at DESC",
+            (tenant_id,),
+        )
         return [dict(r) for r in cur.fetchall()]
     finally:
         conn.close()
 
 
-def _get_assessment(aia_id):
+def _get_assessment(aia_id, tenant_id):
     pg = _get_pg()
     if pg:
         try:
             cur = pg.cursor()
-            cur.execute("SELECT * FROM aia_assessments WHERE id = %s", (aia_id,))
+            cur.execute(
+                "SELECT * FROM aia_assessments WHERE id = %s AND (tenant_id = %s OR tenant_id IS NULL)",
+                (aia_id, tenant_id),
+            )
             cols = [d[0] for d in cur.description]
             row = cur.fetchone()
             pg.close()
@@ -82,14 +92,17 @@ def _get_assessment(aia_id):
                 pass
     conn = _get_db()
     try:
-        cur = conn.execute("SELECT * FROM aia_assessments WHERE id = ?", (aia_id,))
+        cur = conn.execute(
+            "SELECT * FROM aia_assessments WHERE id = ? AND (tenant_id = ? OR tenant_id IS NULL)",
+            (aia_id, tenant_id),
+        )
         row = cur.fetchone()
         return dict(row) if row else None
     finally:
         conn.close()
 
 
-def _save_assessment(data, aia_id=None):
+def _save_assessment(tenant_id, data, aia_id=None):
     answers = json.dumps(data.get("answers", {}))
     fields = (
         data.get("name", ""),
@@ -112,14 +125,18 @@ def _save_assessment(data, aia_id=None):
             cur = pg.cursor()
             if aia_id:
                 cur.execute(
-                    "UPDATE aia_assessments SET name=%s, purpose=%s, affected_parties=%s, decision_type=%s, human_oversight=%s, risk_tier=%s, data_sources=%s, known_limitations=%s, mitigation_measures=%s, review_cadence=%s, answers_json=%s, status=%s, created_by=%s, updated_at=NOW() WHERE id=%s",
-                    fields + (aia_id,),
+                    "UPDATE aia_assessments SET name=%s, purpose=%s, affected_parties=%s, decision_type=%s, human_oversight=%s, risk_tier=%s, data_sources=%s, known_limitations=%s, mitigation_measures=%s, review_cadence=%s, answers_json=%s, status=%s, created_by=%s, updated_at=NOW() WHERE id=%s AND (tenant_id=%s OR tenant_id IS NULL)",
+                    fields + (aia_id, tenant_id),
                 )
+                if cur.rowcount == 0:
+                    pg.rollback()
+                    pg.close()
+                    return None
                 new_id = aia_id
             else:
                 cur.execute(
-                    "INSERT INTO aia_assessments (name, purpose, affected_parties, decision_type, human_oversight, risk_tier, data_sources, known_limitations, mitigation_measures, review_cadence, answers_json, status, created_by) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) RETURNING id",
-                    fields,
+                    "INSERT INTO aia_assessments (name, purpose, affected_parties, decision_type, human_oversight, risk_tier, data_sources, known_limitations, mitigation_measures, review_cadence, answers_json, status, created_by, tenant_id) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) RETURNING id",
+                    fields + (tenant_id,),
                 )
                 new_id = cur.fetchone()[0]
             pg.commit()
@@ -134,15 +151,18 @@ def _save_assessment(data, aia_id=None):
     conn = _get_db()
     try:
         if aia_id:
-            conn.execute(
-                "UPDATE aia_assessments SET name=?, purpose=?, affected_parties=?, decision_type=?, human_oversight=?, risk_tier=?, data_sources=?, known_limitations=?, mitigation_measures=?, review_cadence=?, answers_json=?, status=?, created_by=?, updated_at=CURRENT_TIMESTAMP WHERE id=?",
-                fields + (aia_id,),
+            cur = conn.execute(
+                "UPDATE aia_assessments SET name=?, purpose=?, affected_parties=?, decision_type=?, human_oversight=?, risk_tier=?, data_sources=?, known_limitations=?, mitigation_measures=?, review_cadence=?, answers_json=?, status=?, created_by=?, updated_at=CURRENT_TIMESTAMP WHERE id=? AND (tenant_id=? OR tenant_id IS NULL)",
+                fields + (aia_id, tenant_id),
             )
+            if cur.rowcount == 0:
+                conn.rollback()
+                return None
             conn.commit()
             return aia_id
         cur = conn.execute(
-            "INSERT INTO aia_assessments (name, purpose, affected_parties, decision_type, human_oversight, risk_tier, data_sources, known_limitations, mitigation_measures, review_cadence, answers_json, status, created_by) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)",
-            fields,
+            "INSERT INTO aia_assessments (name, purpose, affected_parties, decision_type, human_oversight, risk_tier, data_sources, known_limitations, mitigation_measures, review_cadence, answers_json, status, created_by, tenant_id) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+            fields + (tenant_id,),
         )
         conn.commit()
         return cur.lastrowid
@@ -153,13 +173,14 @@ def _save_assessment(data, aia_id=None):
 @aia_bp.route("/")
 @login_required
 def list_aias():
-    assessments = _list_assessments()
+    assessments = _list_assessments(_institute_tenant_id())
     return render_template("aia_list.html", assessments=assessments)
 
 
 @aia_bp.route("/new", methods=["GET", "POST"])
 @login_required
 def new_aia():
+    tenant_id = _institute_tenant_id()
     if request.method == "POST":
         data = {q["id"]: request.form.get(q["id"], "").strip() for q in AIA_QUESTIONS}
         data["status"] = "draft"
@@ -168,7 +189,7 @@ def new_aia():
         if missing:
             flash(f"Required: {', '.join(missing)}", "error")
             return render_template("aia_form.html", questions=AIA_QUESTIONS, data=data, edit=False)
-        aia_id = _save_assessment(data)
+        aia_id = _save_assessment(tenant_id, data)
         flash(f"Assessment created (ID {aia_id}).", "success")
         return redirect(url_for("aia.view_aia", aia_id=aia_id))
     return render_template("aia_form.html", questions=AIA_QUESTIONS, data={}, edit=False)
@@ -177,7 +198,7 @@ def new_aia():
 @aia_bp.route("/<int:aia_id>")
 @login_required
 def view_aia(aia_id):
-    assessment = _get_assessment(aia_id)
+    assessment = _get_assessment(aia_id, _institute_tenant_id())
     if not assessment:
         flash("Assessment not found.", "error")
         return redirect(url_for("aia.list_aias"))
@@ -192,7 +213,8 @@ def view_aia(aia_id):
 @aia_bp.route("/<int:aia_id>/edit", methods=["GET", "POST"])
 @login_required
 def edit_aia(aia_id):
-    assessment = _get_assessment(aia_id)
+    tenant_id = _institute_tenant_id()
+    assessment = _get_assessment(aia_id, tenant_id)
     if not assessment:
         flash("Assessment not found.", "error")
         return redirect(url_for("aia.list_aias"))
@@ -200,7 +222,9 @@ def edit_aia(aia_id):
         data = {q["id"]: request.form.get(q["id"], "").strip() for q in AIA_QUESTIONS}
         data["status"] = request.form.get("status", assessment.get("status", "draft"))
         data["created_by"] = assessment.get("created_by", "admin")
-        _save_assessment(data, aia_id=aia_id)
+        if _save_assessment(tenant_id, data, aia_id=aia_id) is None:
+            flash("Assessment not found.", "error")
+            return redirect(url_for("aia.list_aias"))
         flash("Assessment updated.", "success")
         return redirect(url_for("aia.view_aia", aia_id=aia_id))
     return render_template("aia_form.html", questions=AIA_QUESTIONS, data=assessment, edit=True, aia_id=aia_id)
@@ -209,9 +233,11 @@ def edit_aia(aia_id):
 @aia_bp.route("/<int:aia_id>/publish", methods=["POST"])
 @login_required
 def publish_aia(aia_id):
-    assessment = _get_assessment(aia_id)
+    tenant_id = _institute_tenant_id()
+    assessment = _get_assessment(aia_id, tenant_id)
     if not assessment:
         return jsonify({"error": "not found"}), 404
     assessment["status"] = "published"
-    _save_assessment(assessment, aia_id=aia_id)
+    if _save_assessment(tenant_id, assessment, aia_id=aia_id) is None:
+        return jsonify({"error": "not found"}), 404
     return jsonify({"success": True, "status": "published"})
