@@ -1,0 +1,43 @@
+# CREED app on Citadel — rebuilt 2026-11-06 from GitHub main 809eb98 (PR #28).
+# DB = the existing live creed_postgres (project "creed", network creed_default) — NOT managed here.
+# FIRST BOOT ONLY: CREED_WORKERS=1 (admin-seed race with 2 workers on an empty /data); then default 2.
+services:
+  creed:
+    image: creed-citadel:809eb98
+    container_name: kytran_creed
+    restart: unless-stopped
+    mem_limit: 512m
+    cpus: 0.5
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    env_file: .env
+    ports:
+      - "172.17.0.1:8086:8086"     # beacon
+      - "100.64.0.10:8086:8086"    # platform (host network) + mesh
+    command: ["sh", "-c", "exec gunicorn --bind 0.0.0.0:8086 --workers ${CREED_WORKERS:-2} --timeout 120 'kytran_creed.app:create_app()'"]
+    environment:
+      TZ: America/Toronto
+      KCR_PORT: "8086"
+      KCR_ADMIN_USER: admin
+      DB_HOST: creed_postgres
+      DB_PORT: "5432"
+      DB_NAME: creed
+      DB_USER: creed
+      DB_PASSWORD_FILE: /run/secrets/db_password
+      REQUIRE_INGEST_KEYS: "true"
+      KYTRAN_PLATFORM_INTERNAL: http://100.64.0.10:3000
+    volumes:
+      - creed_data:/data
+    secrets: [db_password]
+    networks: [creed_default]
+
+networks:
+  creed_default:
+    external: true
+
+volumes:
+  creed_data:
+
+secrets:
+  db_password:
+    file: /opt/archie-products/creed/secrets/db_password.txt
